@@ -13,7 +13,7 @@
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL 16" /></a>
   <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
   <a href="https://www.portainer.io/"><img src="https://img.shields.io/badge/Docker-Portainer%20%7C%20OMV-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker / Portainer" /></a>
-  <a href="#-licenciamento-e-termos-de-uso"><img src="https://img.shields.io/badge/Licen%C3%A7a-AGPLv3%20%2B%20Comercial-8A2BE2?style=for-the-badge" alt="Licença" /></a>
+  <a href="#-licenciamento-e-termos-de-uso"><img src="https://img.shields.io/badge/Licen%C3%A7a-AGPLv3-8A2BE2?style=for-the-badge" alt="Licença" /></a>
 </p>
 
 <p align="center">
@@ -282,20 +282,21 @@ npm run db:generate         # gera nova migração após alterar src/db/schema.t
 
 ## 📜 Licenciamento e Termos de Uso
 
-Este projeto é de código aberto sob a licença **GNU Affero General Public License v3.0 (AGPLv3)**, com restrições comerciais específicas para revenda.
+Este projeto é de código aberto sob a licença **GNU Affero General Public License v3.0 (AGPLv3)**. O texto completo está em [`LICENSE`](LICENSE).
 
-### 1. Uso Gratuito e Não-Comercial (Open Source)
+### 1. Uso livre (AGPLv3)
 Você é totalmente livre para:
-* Baixar, clonar e usar este software para fins **pessoais, educacionais ou comunitários** sem pagar nada.
-* Modificar o código-fonte para atender às suas necessidades, desde que **mantenha os créditos originais do autor** e distribua qualquer versão modificada sob os mesmos termos abertos (AGPLv3).
+* Baixar, clonar e usar este software para fins **pessoais, educacionais, comunitários ou comerciais** sem pagar nada.
+* Modificar o código-fonte para atender às suas necessidades.
 
-### 2. Uso Comercial e Revenda (Licença Paga)
-Este software **não** pode ser utilizado para fins de **revenda, comercialização de pacotes fechados, SaaS comercial cobrado de terceiros ou integração em produtos comerciais proprietários** sem uma autorização formal.
+Em troca, a AGPLv3 exige que você:
+* **Mantenha os créditos** e os avisos de copyright e de licença do autor original.
+* **Publique o código-fonte completo**, incluindo as suas modificações, sob a mesma licença AGPLv3, sempre que distribuir o software **ou oferecê-lo a terceiros pela internet** (por exemplo, como SaaS ou site hospedado para clientes).
 
-* Se você deseja utilizar este sistema para lucrar revendendo-o como um produto ou serviço para terceiros, **é obrigatória a aquisição de uma Licença Comercial**.
-* Para negociar termos comerciais e adquirir a licença de revenda, entre em contato através do e-mail: **[seu-email@dominio.com]** ou [abra uma issue](https://github.com/jmarquesneto/ofertas_whitelabel/issues) no repositório.
+### 2. Licença Comercial (para quem não quer abrir o código)
+Se você quer usar este sistema em um **produto ou serviço fechado**, como revenda white label para clientes, SaaS proprietário ou integração em software comercial, **sem publicar o seu código-fonte** nos termos da AGPLv3, é necessária uma **Licença Comercial** separada, negociada diretamente com o autor.
 
-O texto completo da AGPLv3 está em [`LICENSE`](LICENSE).
+* Para negociar termos comerciais, [abra uma issue](https://github.com/jmarquesneto/ofertas_whitelabel/issues) no repositório.
 
 ---
 

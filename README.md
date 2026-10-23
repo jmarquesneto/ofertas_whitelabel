@@ -42,7 +42,7 @@ E roda em qualquer servidor caseiro: uma imagem Docker pronta, pensada para **Op
 <p align="center">
   <img src="docs/assets/vitrine-desktop.png" alt="Vitrine pública" width="95%" />
   <br>
-  <em>Vitrine pública: busca, filtros por plataforma, cupom com um clique para copiar e contagem regressiva de cada oferta.</em>
+  <em>Home: hero configurável com mascote, ofertas em destaque com preço "de/por" e % de desconto, cupom copiável e favoritos.</em>
 </p>
 
 <br>
@@ -50,7 +50,7 @@ E roda em qualquer servidor caseiro: uma imagem Docker pronta, pensada para **Op
 <p align="center">
   <img src="docs/assets/white-label.png" alt="Mesmo código, duas marcas" width="95%" />
   <br>
-  <em>White label: a mesma instalação com duas identidades. O texto dos botões fica branco ou escuro automaticamente, conforme o contraste da cor escolhida.</em>
+  <em>White label: a mesma instalação com duas identidades. O texto dos botões fica branco ou escuro sozinho, conforme o contraste da cor.</em>
 </p>
 
 <br>
@@ -58,38 +58,51 @@ E roda em qualquer servidor caseiro: uma imagem Docker pronta, pensada para **Op
 <table align="center" width="100%">
   <tr>
     <td width="50%" align="center" valign="top">
+      <strong>🗂️ Categorias e filtros</strong><br><br>
+      <img src="docs/assets/vitrine-listagem.png" alt="Listagem por categoria" width="100%" />
+      <br><em>Categorias com subcategorias, ordenação (populares, maior desconto, menor preço) e filtro por loja.</em>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <strong>🛍️ Página da oferta</strong><br><br>
+      <img src="docs/assets/vitrine-oferta.png" alt="Página da oferta" width="100%" />
+      <br><em>Prévia bonita no WhatsApp/Telegram, botão "Ir para a loja" (clique contado) e compartilhamento com texto pronto.</em>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
       <strong>📊 Analytics de cliques</strong><br><br>
       <img src="docs/assets/painel-analytics.png" alt="Analytics" width="100%" />
-      <br><em>Cliques em 24h e 7 dias, visitantes únicos, gráfico diário e ranking por oferta.</em>
+      <br><em>Cliques em 24h e 7 dias (com tendência), visitantes únicos, gráfico diário e ranking.</em>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>🏷️ Gestão de ofertas</strong><br><br>
       <img src="docs/assets/painel-ofertas.png" alt="Lista de ofertas" width="100%" />
-      <br><em>No ar, expiradas e pausadas. Renovar por 72h, pausar ou excluir com um clique.</em>
+      <br><em>Destacar na home, pausar, renovar por 72h, duplicar, editar e excluir com um clique.</em>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <strong>✍️ Cadastro com pré-visualização</strong><br><br>
-      <img src="docs/assets/painel-nova-oferta.png" alt="Nova oferta" width="100%" />
-      <br><em>Link curto gerado do título, cupom, imagem por upload ou URL e validade em horas.</em>
+      <strong>✍️ Cadastro com prévia do card</strong><br><br>
+      <img src="docs/assets/painel-nova-oferta.png" alt="Editar oferta" width="100%" />
+      <br><em>Preço "de/por" com desconto calculado ao vivo, categoria, cupom, imagem por upload ou URL.</em>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>🎨 Aparência do site</strong><br><br>
       <img src="docs/assets/painel-aparencia.png" alt="Configurações white label" width="100%" />
-      <br><em>Nome, slogan, logo, favicon, cores (hex) e aviso legal, com prévia ao vivo.</em>
+      <br><em>Logo, cores, hero (título, mascote, selos), faixa de afiliados e aviso legal, com prévia ao vivo.</em>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <strong>🔐 2FA obrigatório</strong><br><br>
-      <img src="docs/assets/painel-2fa.png" alt="Google Authenticator" width="70%" />
-      <br><em>Google Authenticator, Authy ou 1Password. Sem o código, não há sessão.</em>
+      <strong>🗃️ Categorias</strong><br><br>
+      <img src="docs/assets/painel-categorias.png" alt="Categorias" width="100%" />
+      <br><em>Dois níveis (categoria → subcategoria), com ícone e ordem no menu.</em>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>📱 Feito para o celular</strong><br><br>
-      <img src="docs/assets/vitrine-mobile.png" alt="Vitrine no celular" width="55%" />
-      <br><em>Grade de 2 colunas no celular, que é de onde vem a maior parte dos cliques de afiliado.</em>
+      <img src="docs/assets/vitrine-mobile.png" alt="Vitrine no celular" width="48%" />
+      <img src="docs/assets/painel-2fa.png" alt="2FA" width="40%" />
+      <br><em>Barra inferior no celular e login protegido por 2FA obrigatório.</em>
     </td>
   </tr>
 </table>
@@ -99,11 +112,14 @@ E roda em qualquer servidor caseiro: uma imagem Docker pronta, pensada para **Op
 ## 🌟 Recursos
 
 ### 1. 🛒 Vitrine pública
-* **Busca** por título, descrição ou cupom, e **filtros rápidos por plataforma**, só com plataformas que têm ofertas no ar.
-* **Card de oferta** com imagem, plataforma, selo "Nova" (menos de 6h), cupom copiável e botão de compra que abre em nova aba (`rel="sponsored"`).
-* **Expiração automática**: cada oferta vale 72h por padrão (configurável). Depois disso some da vitrine sozinha, sem cron.
-* **Rodapé com aviso legal** de afiliado, editável no painel.
-* Funciona sem JavaScript: busca e filtros são links e formulários simples, com URLs compartilháveis (`/?q=fone&p=shopee`).
+* **Home** com hero configurável (título, trecho destacado, mascote e 3 selos), ofertas em destaque, categorias em círculos, novidades e faixa "somos uma página de afiliados".
+* **Categorias com subcategorias** no menu, na lateral da listagem e em `/categorias`.
+* **Listagem** (`/ofertas`) com busca, filtro por categoria e loja e ordenação: mais recentes, mais populares, maior desconto, menor e maior preço.
+* **Card** com % de desconto, preço "de/por", cupom copiável, favorito e botão "Ver oferta" que vai direto à loja (`rel="sponsored"`).
+* **Página da oferta** (`/oferta/<slug>`) com Open Graph para prévia no WhatsApp/Telegram, compartilhamento com texto pronto e ofertas relacionadas.
+* **Favoritos** salvos no navegador do visitante, sem cadastro.
+* **Expiração automática**: cada oferta vale 72h por padrão. Depois some da vitrine sozinha, sem cron.
+* **Celular primeiro**: barra de navegação inferior, hero compacto e grade de 2 colunas.
 
 ### 2. 🔗 Links curtos e rastreamento de cliques
 * Cada oferta ganha um endereço curto no seu domínio: `/fone-bluetooth-anc`.
@@ -126,7 +142,7 @@ sequenceDiagram
 ```
 
 ### 3. 🎨 White label de verdade
-* Nome, slogan, logo, favicon, **cor primária**, **cor secundária** e texto do rodapé salvos no banco.
+* Nome, slogan, logo, favicon, **cor primária**, **cor secundária**, hero, faixa de afiliados e rodapé salvos no banco.
 * As cores viram variáveis CSS injetadas no `<html>` e o Tailwind usa essas variáveis (`bg-primary`, `text-secondary/80`…).
 * **Contraste automático**: o sistema calcula se o texto sobre cada cor deve ser branco ou escuro, então qualquer cor escolhida continua legível.
 
@@ -137,9 +153,11 @@ sequenceDiagram
 * **Cadastro fecha sozinho** depois do primeiro administrador.
 * Uploads validados pela **assinatura binária** do arquivo (não pelo nome), com SVG servido em *sandbox*.
 
-### 5. 📊 Analytics
-* Cliques nas últimas 24h e 7 dias, visitantes únicos e ofertas no ar.
-* Gráfico de cliques por dia (14 dias) e ranking de ofertas com total e últimos 7 dias.
+### 5. 📊 Painel e analytics
+* Cliques nas últimas 24h e 7 dias (com tendência), visitantes únicos e ofertas no ar.
+* Gráfico de cliques por dia (14 dias) e ranking de ofertas.
+* Ofertas com **destaque na home**, pausar, renovar, **duplicar**, categoria e preço "de/por" com desconto calculado.
+* CRUD de **categorias** (2 níveis, com ícone) e de **plataformas**.
 
 ---
 
@@ -218,7 +236,7 @@ Ou copie a pasta `APPDATA_PATH` inteira com a stack parada.
 | :--- | :--- | :--- |
 | App | **Next.js 15** (App Router, Server Actions) | Vitrine com SSR rápida para SEO e painel no mesmo container |
 | Banco | **PostgreSQL 16** + **Drizzle ORM** | SQL tipado, migrações em SQL puro, sem binário extra na imagem |
-| Estilo | **Tailwind CSS** + variáveis CSS | Cores da marca trocadas em tempo de execução |
+| Estilo | **Tailwind CSS** + variáveis CSS, **Montserrat**, ícones **Lucide** | Cores da marca trocadas em tempo de execução |
 | Auth | **jose** (JWT), **otplib** (TOTP), **bcrypt** | 2FA obrigatório e sessão verificada também no middleware |
 | Deploy | **Docker** multi-stage, **GHCR**, **Portainer** | Imagem enxuta, usuário não-root, healthcheck e migrações automáticas no boot |
 
@@ -235,11 +253,12 @@ Ou copie a pasta `APPDATA_PATH` inteira com a stack parada.
    ├─ middleware.ts              # protege /admin/*
    ├─ db/schema.ts               # users, site_settings, platforms, offers, clicks
    ├─ lib/                       # auth, sessão, cripto, cores, slug, uploads
-   ├─ server/actions/            # controllers: auth, settings, platforms, offers
+   ├─ server/actions/            # controllers: auth, settings, categories, platforms, offers
    ├─ server/queries.ts          # consultas da vitrine e do analytics
-   ├─ app/page.tsx               # vitrine pública
+   ├─ app/(site)/                # vitrine: home, /ofertas, /oferta/[slug], /categorias, /favoritos
    ├─ app/[slug]/route.ts        # redirecionamento + registro do clique
-   └─ app/admin/                 # login, cadastro, 2FA e painel
+   ├─ app/admin/                 # login, cadastro, 2FA e painel
+   └─ components/                # public/ (vitrine), admin/ (painel), Icon.tsx (ícones)
 ```
 </details>
 
@@ -249,9 +268,10 @@ Ou copie a pasta `APPDATA_PATH` inteira com a stack parada.
 | Tabela | Campos principais |
 | :--- | :--- |
 | `users` | e-mail único, hash bcrypt, segredo TOTP cifrado, 2FA ativo, versão de sessão |
-| `site_settings` | linha única: nome, slogan, logo, favicon, cores hex (validadas no banco), rodapé |
+| `site_settings` | linha única: nome, slogan, logo, favicon, cores hex (validadas no banco), hero, selos, faixa de afiliados, rodapé |
 | `platforms` | nome, slug, logo, ativa, ordem |
-| `offers` | plataforma, título, descrição, slug único, link de afiliado, cupom, imagem, expira em, cliques |
+| `categories` | nome, slug, ícone, categoria pai (2 níveis), ordem, ativa |
+| `offers` | plataforma, categoria, título, preço, preço original, destaque, slug único, link de afiliado, cupom, imagem, expira em, cliques |
 | `clicks` | oferta, hash do IP, user-agent, referer, data |
 </details>
 
@@ -272,6 +292,7 @@ npm run db:generate         # gera nova migração após alterar src/db/schema.t
 
 ## 🗺️ Próximos passos
 
+- [x] Categorias, preço "de/por", página da oferta e favoritos
 - [ ] Gestão de usuários no painel (convidar admin, resetar 2FA, sair de todos os dispositivos)
 - [ ] Importar oferta a partir do link (título e imagem automáticos)
 - [ ] Postagem automática no Telegram/WhatsApp

@@ -1,5 +1,5 @@
 import "server-only";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
+import { copyFile, mkdir, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -69,4 +69,20 @@ export async function removeUpload(publicPath: string | null | undefined) {
   const abs = path.resolve(UPLOAD_DIR, publicPath.replace(/^\/uploads\//, ""));
   if (!abs.startsWith(UPLOAD_DIR + path.sep)) return;
   await unlink(abs).catch(() => {});
+}
+
+/** Duplica um upload (ex.: ao duplicar oferta), para cada registro ter o seu arquivo */
+export async function copyUpload(publicPath: string | null | undefined): Promise<string | null> {
+  if (!publicPath?.startsWith("/uploads/")) return publicPath ?? null;
+  const src = path.resolve(UPLOAD_DIR, publicPath.replace(/^\/uploads\//, ""));
+  if (!src.startsWith(UPLOAD_DIR + path.sep)) return null;
+  const rel = path.relative(UPLOAD_DIR, src);
+  const folder = path.dirname(rel);
+  const name = `${randomUUID()}${path.extname(src)}`;
+  try {
+    await copyFile(src, path.join(UPLOAD_DIR, folder, name));
+    return `/uploads/${folder}/${name}`;
+  } catch {
+    return null;
+  }
 }

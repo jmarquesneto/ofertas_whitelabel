@@ -1,6 +1,6 @@
 "use client";
 import { useFormStatus } from "react-dom";
-import type { ActionState } from "@/lib/utils";
+import { cn, type ActionState } from "@/lib/utils";
 
 export function SubmitButton({ children, className = "btn-primary", pendingText = "Salvando…" }: {
   children: React.ReactNode; className?: string; pendingText?: string;
@@ -40,5 +40,34 @@ export function ActionButton({ action, children, className = "btn-ghost", confir
     >
       <SubmitButton className={className} pendingText="…">{children}</SubmitButton>
     </form>
+  );
+}
+
+/** Botão de ícone que dispara uma Server Action (listagens do painel) */
+export function IconAction({ action, children, label, danger, confirmText }: {
+  action: () => Promise<unknown>; children: React.ReactNode; label: string; danger?: boolean; confirmText?: string;
+}) {
+  return (
+    <form
+      action={async () => { await action(); }}
+      onSubmit={(e) => { if (confirmText && !window.confirm(confirmText)) e.preventDefault(); }}
+    >
+      <IconSubmit label={label} danger={danger}>{children}</IconSubmit>
+    </form>
+  );
+}
+
+function IconSubmit({ children, label, danger }: { children: React.ReactNode; label: string; danger?: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit" title={label} aria-label={label} disabled={pending}
+      className={cn(
+        "grid h-9 w-9 place-items-center rounded-lg transition disabled:opacity-40",
+        danger ? "text-red-600 hover:bg-red-50" : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
+      )}
+    >
+      {children}
+    </button>
   );
 }

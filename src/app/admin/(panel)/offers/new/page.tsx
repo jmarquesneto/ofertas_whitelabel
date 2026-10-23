@@ -1,6 +1,6 @@
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
-import { platforms } from "@/db/schema";
+import { categories, platforms } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { createOfferAction } from "@/server/actions/offers";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -10,7 +10,10 @@ export const metadata = { title: "Nova oferta" };
 
 export default async function NewOffer() {
   await requireAdmin();
-  const list = await db.select({ id: platforms.id, name: platforms.name }).from(platforms).orderBy(asc(platforms.sortOrder), asc(platforms.name));
+  const [list, cats] = await Promise.all([
+    db.select({ id: platforms.id, name: platforms.name }).from(platforms).orderBy(asc(platforms.sortOrder), asc(platforms.name)),
+    db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).orderBy(asc(categories.sortOrder), asc(categories.name)),
+  ]);
   return (
     <>
       <PageHeader title="Nova oferta" />
@@ -20,6 +23,7 @@ export default async function NewOffer() {
         <OfferForm
           action={createOfferAction}
           platforms={list}
+          categories={cats}
           siteUrl={process.env.PUBLIC_URL ?? ""}
           defaultHours={Number(process.env.OFFER_DEFAULT_HOURS ?? 72)}
         />

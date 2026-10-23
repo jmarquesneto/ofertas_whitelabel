@@ -1,16 +1,19 @@
+import { Copy, Pause, Pencil, Play, RotateCw, Search, Star, Trash2 } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { listAdminOffers } from "@/server/queries";
-import { deleteOfferAction, renewOfferAction, toggleOfferAction } from "@/server/actions/offers";
+import {
+  deleteOfferAction, duplicateOfferAction, renewOfferAction, toggleFeaturedAction, toggleOfferAction,
+} from "@/server/actions/offers";
 import { PageHeader } from "@/components/admin/PageHeader";
-import { ActionButton } from "@/components/admin/ui";
-import { cn, fmtInt, timeLeft } from "@/lib/utils";
+import { IconAction } from "@/components/admin/ui";
+import { cn, discountPct, fmtBRL, fmtInt, timeLeft } from "@/lib/utils";
 
 export const metadata = { title: "Ofertas" };
 export const dynamic = "force-dynamic";
 
 const TABS = [
   { key: "live", label: "No ar" },
-  { key: "expired", label: "Expiradas / pausadas" },
+  { key: "expired", label: "Expiradas e pausadas" },
   { key: "all", label: "Todas" },
 ] as const;
 
@@ -27,82 +30,99 @@ export default async function OffersPage({
     <>
       <PageHeader
         title="Ofertas"
-        subtitle="Ofertas saem da vitrine automaticamente ao expirar (padrão 72h)."
-        action={<a href="/admin/offers/new" className="btn-primary">Nova oferta</a>}
+        subtitle="Saem da vitrine sozinhas quando a validade termina. A estrela coloca a oferta em destaque na home."
+        action={<a href="/admin/offers/new" className="btn-primary">+ Nova oferta</a>}
       />
 
       {(sp.created || sp.updated) && (
-        <p role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p role="status" className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
           {sp.created ? "Oferta publicada." : "Oferta atualizada."}
         </p>
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 rounded-lg bg-surface-sunken p-1">
+        <div className="flex gap-1 rounded-xl bg-surface-sunken p-1">
           {TABS.map((t) => (
             <a key={t.key} href={`/admin/offers?f=${t.key}`}
-              className={cn("rounded-md px-3 py-1.5 text-sm font-medium", filter === t.key ? "bg-surface-raised shadow-sm" : "text-ink-muted hover:text-ink")}>
+              className={cn("rounded-lg px-3.5 py-2 text-sm font-semibold transition", filter === t.key ? "bg-surface-raised text-ink shadow-sm" : "text-ink-muted hover:text-ink")}>
               {t.label}
             </a>
           ))}
         </div>
-        <form className="flex gap-2">
+        <form className="relative">
           <input type="hidden" name="f" value={filter} />
-          <input name="q" defaultValue={sp.q} placeholder="Buscar pelo título" className="input h-9 w-56 py-1.5" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+          <input name="q" defaultValue={sp.q} placeholder="Buscar pelo título" className="input h-10 w-64 py-2 pl-9" />
         </form>
       </div>
 
       <div className="card overflow-x-auto">
-        <table className="w-full min-w-[820px]">
-          <thead>
+        <table className="w-full min-w-[900px]">
+          <thead className="bg-surface">
             <tr>
-              <th className="table-head w-14" />
               <th className="table-head">Oferta</th>
-              <th className="table-head">Cupom</th>
+              <th className="table-head">Preço</th>
               <th className="table-head">Validade</th>
               <th className="table-head text-right">Cliques</th>
-              <th className="table-head" />
+              <th className="table-head text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={6} className="table-cell py-12 text-center text-ink-muted">Nada por aqui.</td></tr>
+              <tr><td colSpan={5} className="table-cell py-14 text-center text-ink-muted">Nada por aqui.</td></tr>
             )}
-            {rows.map(({ offer: o, platformName }) => {
+            {rows.map(({ offer: o, platformName, categoryName }) => {
               const expired = o.expiresAt <= now;
+              const pct = discountPct(o.price, o.originalPrice);
               return (
-                <tr key={o.id} className={cn(!o.isActive && "opacity-60")}>
+                <tr key={o.id} className={cn("hover:bg-surface/60", !o.isActive && "opacity-60")}>
+                  <td className="table-cell max-w-[380px]">
+                    <div className="flex items-center gap-3">
+                      {o.imagePath ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={o.imagePath} alt="" className="h-12 w-12 shrink-0 rounded-lg bg-white object-contain ring-1 ring-line" />
+                      ) : <span className="h-12 w-12 shrink-0 rounded-lg bg-surface-sunken" />}
+                      <div className="min-w-0">
+                        <a href={`/admin/offers/${o.id}`} className="line-clamp-1 font-semibold hover:underline">{o.title}</a>
+                        <p className="truncate text-xs text-ink-faint">
+                          {platformName}{categoryName && ` · ${categoryName}`}{o.coupon && <> · <span className="font-mono font-semibold text-ink-muted">{o.coupon}</span></>}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="table-cell whitespace-nowrap">
+                    {o.price ? (
+                      <div>
+                        <span className="font-bold text-price">{fmtBRL(o.price)}</span>
+                        {pct && <span className="ml-1.5 rounded bg-primary px-1 py-0.5 text-[10px] font-extrabold text-primary-fg">-{pct}%</span>}
+                      </div>
+                    ) : <span className="text-ink-faint">—</span>}
+                  </td>
+                  <td className="table-cell whitespace-nowrap text-sm">
+                    {!o.isActive ? <span className="font-semibold text-ink-faint">Pausada</span>
+                      : expired ? <span className="font-semibold text-red-700">Expirada</span>
+                      : <span className="font-semibold text-green-700">{timeLeft(o.expiresAt)}</span>}
+                  </td>
+                  <td className="table-cell text-right font-bold tabular-nums">{fmtInt(o.clicksCount)}</td>
                   <td className="table-cell">
-                    {o.imagePath ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={o.imagePath} alt="" className="h-10 w-10 rounded-md bg-surface-sunken object-contain" />
-                    ) : <span className="block h-10 w-10 rounded-md bg-surface-sunken" />}
-                  </td>
-                  <td className="table-cell max-w-[340px]">
-                    <a href={`/admin/offers/${o.id}`} className="line-clamp-1 font-medium hover:underline">{o.title}</a>
-                    <span className="text-xs text-ink-faint">{platformName} · <a href={`/${o.slug}`} target="_blank" className="hover:underline">/{o.slug}</a></span>
-                  </td>
-                  <td className="table-cell font-mono text-xs">{o.coupon ?? "—"}</td>
-                  <td className="table-cell text-sm">
-                    {!o.isActive ? <span className="text-ink-faint">Pausada</span>
-                      : expired ? <span className="text-red-700">Expirada</span>
-                      : <span className="text-emerald-700">{timeLeft(o.expiresAt)}</span>}
-                  </td>
-                  <td className="table-cell text-right font-semibold tabular-nums">{fmtInt(o.clicksCount)}</td>
-                  <td className="table-cell">
-                    <div className="flex justify-end gap-1.5">
-                      {(expired || !o.isActive) && (
-                        <ActionButton action={renewOfferAction.bind(null, o.id)} className="btn-ghost px-2.5 py-1.5 text-xs">Renovar 72h</ActionButton>
+                    <div className="flex justify-end gap-1">
+                      <IconAction action={toggleFeaturedAction.bind(null, o.id)} label={o.isFeatured ? "Tirar do destaque" : "Destacar na home"}>
+                        <Star className={cn("h-4 w-4", o.isFeatured && "fill-primary text-primary")} />
+                      </IconAction>
+                      {expired ? (
+                        <IconAction action={renewOfferAction.bind(null, o.id)} label="Renovar por 72h e publicar"><RotateCw className="h-4 w-4" /></IconAction>
+                      ) : o.isActive ? (
+                        <IconAction action={toggleOfferAction.bind(null, o.id)} label="Pausar"><Pause className="h-4 w-4" /></IconAction>
+                      ) : (
+                        <IconAction action={toggleOfferAction.bind(null, o.id)} label="Publicar"><Play className="h-4 w-4" /></IconAction>
                       )}
-                      {!expired && (
-                        <ActionButton action={toggleOfferAction.bind(null, o.id)} className="btn-ghost px-2.5 py-1.5 text-xs">
-                          {o.isActive ? "Pausar" : "Publicar"}
-                        </ActionButton>
-                      )}
-                      <a href={`/admin/offers/${o.id}`} className="btn-ghost px-2.5 py-1.5 text-xs">Editar</a>
-                      <ActionButton action={deleteOfferAction.bind(null, o.id)} className="btn-danger px-2.5 py-1.5 text-xs" confirmText="Excluir esta oferta e seus cliques?">
-                        Excluir
-                      </ActionButton>
+                      <IconAction action={duplicateOfferAction.bind(null, o.id)} label="Duplicar"><Copy className="h-4 w-4" /></IconAction>
+                      <a href={`/admin/offers/${o.id}`} title="Editar" aria-label="Editar" className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted transition hover:bg-surface-sunken hover:text-ink">
+                        <Pencil className="h-4 w-4" />
+                      </a>
+                      <IconAction action={deleteOfferAction.bind(null, o.id)} label="Excluir" danger confirmText="Excluir esta oferta e o histórico de cliques?">
+                        <Trash2 className="h-4 w-4" />
+                      </IconAction>
                     </div>
                   </td>
                 </tr>

@@ -16,7 +16,7 @@ export function LoginForm() {
         <label className="label" htmlFor="password">Senha</label>
         <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
-      <SubmitButton pendingText="Entrando…">Continuar</SubmitButton>
+      <SubmitButton className="btn-primary w-full py-3" pendingText="Entrando…">Continuar</SubmitButton>
     </form>
   );
 }
@@ -43,7 +43,7 @@ export function RegisterForm() {
         <label className="label" htmlFor="confirm">Confirmar senha</label>
         <input className="input" id="confirm" name="confirm" type="password" autoComplete="new-password" required />
       </div>
-      <SubmitButton pendingText="Criando…">Criar conta e configurar 2FA</SubmitButton>
+      <SubmitButton className="btn-primary w-full py-3" pendingText="Criando…">Criar conta e configurar 2FA</SubmitButton>
     </form>
   );
 }
@@ -61,7 +61,7 @@ export function TotpForm({ cta }: { cta: string }) {
           autoComplete="one-time-code" autoFocus required placeholder="000000"
         />
       </div>
-      <SubmitButton pendingText="Verificando…">{cta}</SubmitButton>
+      <SubmitButton className="btn-primary w-full py-3" pendingText="Verificando…">{cta}</SubmitButton>
     </form>
   );
 }

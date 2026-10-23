@@ -1,7 +1,7 @@
 import path from "node:path";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { db } from "./db";
-import { siteSettings, platforms } from "./db/schema";
+import { siteSettings, platforms, categories } from "./db/schema";
 
 /** Só roda no runtime Node (importado por instrumentation.ts) */
 export async function bootstrap() {
@@ -31,5 +31,28 @@ export async function bootstrap() {
       { name: "Magalu", slug: "magalu", sortOrder: 4 },
     ]);
   }
+  // Categorias iniciais (só se ainda não houver nenhuma)
+  const hasCat = await db.select({ id: categories.id }).from(categories).limit(1);
+  if (hasCat.length === 0) {
+    const tree: [string, string, string, string[]][] = [
+      ["Eletrônicos", "eletronicos", "monitor-smartphone", ["TVs e Áudio", "Celulares e Smartphones", "Computadores e Notebooks", "Games", "Acessórios"]],
+      ["Casa e Cozinha", "casa-e-cozinha", "house", ["Eletroportáteis", "Utilidades", "Decoração"]],
+      ["Esporte e Lazer", "esporte-e-lazer", "dumbbell", []],
+      ["Moda", "moda", "shirt", []],
+      ["Beleza e Saúde", "beleza-e-saude", "sparkles", []],
+      ["Automotivo", "automotivo", "car", []],
+      ["Brinquedos", "brinquedos", "toy-brick", []],
+    ];
+    const slugify = (t: string) =>
+      t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    for (const [i, [name, slug, icon, subs]] of tree.entries()) {
+      const [parent] = await db.insert(categories).values({ name, slug, icon, sortOrder: i + 1 }).returning({ id: categories.id });
+      if (subs.length)
+        await db.insert(categories).values(
+          subs.map((n, j) => ({ name: n, slug: slugify(n), icon: icon, parentId: parent.id, sortOrder: j + 1 })),
+        );
+    }
+  }
+
   console.log("[boot] migrações aplicadas, configurações prontas");
 }

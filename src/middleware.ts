@@ -1,27 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, PRE_COOKIE, verifyToken, type SessionClaims, type PreClaims } from "@/lib/session";
 
 /**
- * Primeira barreira do painel (Edge). A verificação definitiva
- * (usuário existe, 2FA ativo, versão da sessão) acontece em requireAdmin().
+ * O controle de acesso do painel é feito no servidor por requireAdmin()
+ * (layout do painel, cada página e cada Server Action) e na página de 2FA.
+ * Lá o redirect para /admin/login é relativo, então funciona atrás de qualquer
+ * IP, porta ou domínio — algo que o middleware não garante, porque o servidor
+ * interno do Next troca o Host antes de chegar aqui.
+ *
+ * O middleware só marca o painel como não indexável.
  */
-const PUBLIC_ADMIN = ["/admin/login", "/admin/register"];
-
-// Location relativo: funciona atrás de qualquer proxy reverso/domínio sem depender do Host interno
-const toLogin = () => new NextResponse(null, { status: 307, headers: { Location: "/admin/login" } });
-
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  if (PUBLIC_ADMIN.includes(pathname)) return NextResponse.next();
-
-  if (pathname === "/admin/2fa") {
-    const pre = await verifyToken<PreClaims>(req.cookies.get(PRE_COOKIE)?.value);
-    return pre ? NextResponse.next() : toLogin();
-  }
-
-  const s = await verifyToken<SessionClaims>(req.cookies.get(SESSION_COOKIE)?.value);
-  if (!s || s.stage !== "full") return toLogin();
+export function middleware(_req: NextRequest) {
   const res = NextResponse.next();
   res.headers.set("X-Robots-Tag", "noindex, nofollow");
   return res;

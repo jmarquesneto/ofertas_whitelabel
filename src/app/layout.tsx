@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSettings();
   return {
+    metadataBase: process.env.PUBLIC_URL ? new URL(process.env.PUBLIC_URL) : undefined,
     title: { default: s.siteName, template: `%s · ${s.siteName}` },
     description: s.tagline ?? `Ofertas e cupons selecionados por ${s.siteName}`,
     icons: s.faviconPath ? { icon: s.faviconPath, shortcut: s.faviconPath } : undefined,
@@ -35,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
         />
         <meta name="theme-color" content={s.primaryColor} />
       </head>

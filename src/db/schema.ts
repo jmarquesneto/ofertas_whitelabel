@@ -10,6 +10,9 @@ import {
   index,
   uniqueIndex,
   check,
+  numeric,
+  jsonb,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -45,8 +48,32 @@ export const siteSettings = pgTable(
     tagline: varchar("tagline", { length: 160 }),
     logoPath: varchar("logo_path", { length: 255 }),
     faviconPath: varchar("favicon_path", { length: 255 }),
-    primaryColor: varchar("primary_color", { length: 7 }).notNull().default("#C2410C"),
-    secondaryColor: varchar("secondary_color", { length: 7 }).notNull().default("#14423C"),
+    primaryColor: varchar("primary_color", { length: 7 }).notNull().default("#FFC107"),
+    secondaryColor: varchar("secondary_color", { length: 7 }).notNull().default("#111827"),
+    // Hero da home (white label)
+    heroTitle: varchar("hero_title", { length: 120 }).notNull().default("As melhores ofertas,"),
+    heroHighlight: varchar("hero_highlight", { length: 80 }).notNull().default("todos os dias!"),
+    heroSubtitle: varchar("hero_subtitle", { length: 240 })
+      .notNull()
+      .default("A gente garimpa as melhores promoções da internet para você economizar sem perder tempo."),
+    heroImagePath: varchar("hero_image_path", { length: 255 }),
+    heroBadges: jsonb("hero_badges")
+      .$type<{ icon: string; label: string }[]>()
+      .notNull()
+      .default([
+        { icon: "tag", label: "Ofertas conferidas" },
+        { icon: "shield-check", label: "Lojas verificadas" },
+        { icon: "truck", label: "Entrega para todo o Brasil" },
+      ]),
+    // Faixa "somos afiliados" (substitui a newsletter da referência)
+    affiliateTitle: varchar("affiliate_title", { length: 120 })
+      .notNull()
+      .default("Somos uma página de afiliados"),
+    affiliateText: text("affiliate_text")
+      .notNull()
+      .default(
+        "Indicamos ofertas de lojas parceiras. Quando você compra pelos nossos links, a loja nos paga uma pequena comissão — e você não paga nada a mais por isso. É assim que mantemos o site no ar.",
+      ),
     footerText: text("footer_text")
       .notNull()
       .default(
@@ -79,6 +106,24 @@ export const platforms = pgTable(
 );
 
 /* ------------------------------------------------------------------ */
+/* Categorias (2 níveis: categoria → subcategoria)                     */
+/* ------------------------------------------------------------------ */
+export const categories = pgTable(
+  "categories",
+  {
+    id: serial("id").primaryKey(),
+    parentId: integer("parent_id").references((): AnyPgColumn => categories.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 80 }).notNull(),
+    slug: varchar("slug", { length: 90 }).notNull(),
+    icon: varchar("icon", { length: 40 }).notNull().default("tag"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("categories_slug_uq").on(t.slug), index("categories_parent_idx").on(t.parentId)],
+);
+
+/* ------------------------------------------------------------------ */
 /* Ofertas                                                             */
 /* ------------------------------------------------------------------ */
 export const offers = pgTable(
@@ -88,8 +133,12 @@ export const offers = pgTable(
     platformId: integer("platform_id")
       .notNull()
       .references(() => platforms.id, { onDelete: "restrict" }),
+    categoryId: integer("category_id").references(() => categories.id, { onDelete: "set null" }),
     title: varchar("title", { length: 200 }).notNull(),
     description: text("description"),
+    price: numeric("price", { precision: 10, scale: 2 }),
+    originalPrice: numeric("original_price", { precision: 10, scale: 2 }),
+    isFeatured: boolean("is_featured").notNull().default(false),
     slug: varchar("slug", { length: 120 }).notNull(),
     affiliateUrl: text("affiliate_url").notNull(), // "link bruto"
     coupon: varchar("coupon", { length: 60 }),
@@ -105,6 +154,7 @@ export const offers = pgTable(
     uniqueIndex("offers_slug_uq").on(t.slug),
     index("offers_home_idx").on(t.isActive, t.expiresAt),
     index("offers_platform_idx").on(t.platformId),
+    index("offers_category_idx").on(t.categoryId),
   ],
 );
 
@@ -128,8 +178,14 @@ export const clicks = pgTable(
 
 /* Relações (para queries com `with`) */
 export const platformsRelations = relations(platforms, ({ many }) => ({ offers: many(offers) }));
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+  parent: one(categories, { fields: [categories.parentId], references: [categories.id], relationName: "tree" }),
+  children: many(categories, { relationName: "tree" }),
+  offers: many(offers),
+}));
 export const offersRelations = relations(offers, ({ one, many }) => ({
   platform: one(platforms, { fields: [offers.platformId], references: [platforms.id] }),
+  category: one(categories, { fields: [offers.categoryId], references: [categories.id] }),
   clicks: many(clicks),
 }));
 export const clicksRelations = relations(clicks, ({ one }) => ({
@@ -138,5 +194,6 @@ export const clicksRelations = relations(clicks, ({ one }) => ({
 
 export type Offer = typeof offers.$inferSelect;
 export type Platform = typeof platforms.$inferSelect;
+export type Category = typeof categories.$inferSelect;
 export type SiteSettings = typeof siteSettings.$inferSelect;
 export type User = typeof users.$inferSelect;

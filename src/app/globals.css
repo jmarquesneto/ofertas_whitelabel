@@ -5,9 +5,9 @@
 /* Valores padrão — substituídos em tempo de execução pelo <html style> do layout
    com as cores salvas em site_settings. */
 :root {
-  --c-primary: 194 65 12;
-  --c-on-primary: 255 255 255;
-  --c-secondary: 20 66 60;
+  --c-primary: 255 193 7;
+  --c-on-primary: 17 24 39;
+  --c-secondary: 17 24 39;
   --c-on-secondary: 255 255 255;
 }
 
@@ -23,6 +23,7 @@ body { @apply bg-surface text-ink font-sans antialiased; }
   .btn-primary { @apply btn bg-primary text-primary-fg hover:bg-primary/90 focus-visible:outline-primary; }
   .btn-secondary { @apply btn bg-secondary text-secondary-fg hover:bg-secondary/90 focus-visible:outline-secondary; }
   .btn-ghost { @apply btn border border-line bg-surface-raised text-ink hover:bg-surface-sunken focus-visible:outline-ink; }
+  .btn-outline { @apply btn border-2 border-secondary bg-transparent text-secondary hover:bg-secondary hover:text-secondary-fg focus-visible:outline-secondary; }
   .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50 focus-visible:outline-red-600; }
 
   .field { @apply grid gap-1.5; }
@@ -30,9 +31,12 @@ body { @apply bg-surface text-ink font-sans antialiased; }
   .hint { @apply text-xs text-ink-muted; }
   .input {
     @apply w-full rounded-lg border border-line bg-surface-raised px-3 py-2.5 text-sm text-ink
-           placeholder:text-ink-faint focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25;
+           placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/25;
   }
-  .card { @apply rounded-card border border-line bg-surface-raised; }
+  .card { @apply rounded-card border border-line/70 bg-surface-raised shadow-card; }
+  .container-site { @apply mx-auto w-full max-w-7xl px-4 sm:px-6; }
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
   .table-head { @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-muted; }
   .table-cell { @apply border-t border-line px-4 py-3 align-middle text-sm; }
 }

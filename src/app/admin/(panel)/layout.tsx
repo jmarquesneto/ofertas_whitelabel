@@ -1,3 +1,4 @@
+import { ExternalLink, LogOut } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { logoutAction } from "@/server/actions/auth";
@@ -8,26 +9,36 @@ export const metadata = { robots: { index: false, follow: false } };
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const [user, s] = await Promise.all([requireAdmin(), getSettings()]);
   return (
-    <div className="min-h-screen bg-surface lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="border-b border-line bg-surface-raised p-4 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
-        <div className="mb-4 flex items-center justify-between gap-3 lg:mb-8 lg:block">
-          <a href="/admin" className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-sm font-extrabold text-primary-fg">
-              {s.siteName.charAt(0)}
+    <div className="min-h-screen bg-surface lg:grid lg:grid-cols-[256px_1fr]">
+      <aside className="bg-secondary p-4 text-secondary-fg lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:p-5">
+        <a href="/admin" className="mb-4 block lg:mb-8">
+          {s.logoPath ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={s.logoPath} alt={s.siteName} className="h-10 w-auto max-w-[180px] object-contain" />
+          ) : (
+            <span className="flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-sm font-extrabold text-primary-fg">{s.siteName.charAt(0)}</span>
+              <span className="truncate text-sm font-extrabold">{s.siteName}</span>
             </span>
-            <span className="text-sm font-bold leading-tight">{s.siteName}<span className="block text-xs font-normal text-ink-muted">Painel</span></span>
-          </a>
-        </div>
+          )}
+          <span className="mt-1.5 block text-xs text-white/55">Painel administrativo</span>
+        </a>
         <AdminNav />
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-line pt-4 lg:absolute lg:bottom-4 lg:left-4 lg:right-4 lg:block">
-          <p className="truncate text-xs text-ink-muted">{user.email}</p>
+        <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/10 pt-4 lg:mt-auto lg:block">
+          <p className="truncate text-xs text-white/55">{user.email}</p>
           <div className="flex gap-2 lg:mt-3">
-            <a href="/" target="_blank" className="btn-ghost px-3 py-1.5 text-xs">Ver site</a>
-            <form action={logoutAction}><button className="btn-ghost px-3 py-1.5 text-xs">Sair</button></form>
+            <a href="/" target="_blank" className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/15">
+              <ExternalLink className="h-3.5 w-3.5" /> Ver site
+            </a>
+            <form action={logoutAction}>
+              <button className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/15">
+                <LogOut className="h-3.5 w-3.5" /> Sair
+              </button>
+            </form>
           </div>
         </div>
       </aside>
-      <main className="mx-auto w-full max-w-6xl p-4 sm:p-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8 sm:py-8">{children}</main>
     </div>
   );
 }

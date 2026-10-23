@@ -1,31 +1,34 @@
 "use client";
 import { usePathname } from "next/navigation";
+import { BarChart3, Layers, Palette, Store, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/admin", label: "Analytics", exact: true },
-  { href: "/admin/offers", label: "Ofertas" },
-  { href: "/admin/platforms", label: "Plataformas" },
-  { href: "/admin/settings", label: "Aparência do site" },
+  { href: "/admin", label: "Analytics", icon: BarChart3, exact: true },
+  { href: "/admin/offers", label: "Ofertas", icon: Tag },
+  { href: "/admin/categories", label: "Categorias", icon: Layers },
+  { href: "/admin/platforms", label: "Plataformas", icon: Store },
+  { href: "/admin/settings", label: "Aparência", icon: Palette },
 ];
 
 export function AdminNav() {
   const path = usePathname();
   return (
-    <nav className="flex gap-1 overflow-x-auto lg:flex-col">
-      {items.map((i) => {
-        const active = i.exact ? path === i.href : path.startsWith(i.href);
+    <nav className="flex gap-1 overflow-x-auto scrollbar-none lg:flex-col">
+      {items.map(({ href, label, icon: I, exact }) => {
+        const active = exact ? path === href : path.startsWith(href);
         return (
           <a
-            key={i.href}
-            href={i.href}
-            className={cn(
-              "shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition",
-              active ? "bg-secondary text-secondary-fg" : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
-            )}
+            key={href}
+            href={href}
             aria-current={active ? "page" : undefined}
+            className={cn(
+              "flex shrink-0 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition",
+              active ? "bg-primary text-primary-fg shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
           >
-            {i.label}
+            <I className="h-[18px] w-[18px]" strokeWidth={2.2} />
+            {label}
           </a>
         );
       })}

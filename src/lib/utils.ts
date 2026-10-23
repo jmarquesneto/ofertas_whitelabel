@@ -22,3 +22,15 @@ export const fmtDate = (d: Date) =>
 
 /** Resultado padrão das Server Actions (usado com useActionState) */
 export type ActionState = { ok?: boolean; error?: string; message?: string; fieldErrors?: Record<string, string> };
+
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+/** "1849.90" → "R$ 1.849,90" */
+export const fmtBRL = (v: string | number | null | undefined) =>
+  v === null || v === undefined || v === "" ? null : BRL.format(Number(v)).replace(/\u00a0/g, " ");
+
+/** % de desconto inteiro entre preço original e atual (ou null) */
+export function discountPct(price: string | number | null | undefined, original: string | number | null | undefined) {
+  const p = Number(price), o = Number(original);
+  if (!p || !o || o <= p) return null;
+  return Math.round((1 - p / o) * 100);
+}

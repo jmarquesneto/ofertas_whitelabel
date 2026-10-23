@@ -13,7 +13,7 @@ import { db } from "@/db";
 import { offers, platforms } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { RESERVED_SLUGS, slugify, uniqueOfferSlug } from "@/lib/slug";
-import { removeUpload, saveUpload, UploadError } from "@/lib/uploads";
+import { copyUpload, removeUpload, saveUpload, UploadError } from "@/lib/uploads";
 import type { ActionState } from "@/lib/utils";
 
 const DEFAULT_HOURS = Number(process.env.OFFER_DEFAULT_HOURS ?? 72);
@@ -24,8 +24,29 @@ const httpUrl = z
   .url("Link inválido")
   .refine((u) => /^https?:\/\//i.test(u), "O link precisa começar com http:// ou https://");
 
+/** Aceita "1.849,90", "1849,90", "1849.90" ou "R$ 1.849,90" → "1849.90" | null */
+const money = (label: string) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      const raw = (v ?? "").replace(/R\$|\s/g, "");
+      if (!raw) return null;
+      const norm = raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : raw;
+      const n = Number(norm);
+      if (!Number.isFinite(n) || n < 0 || n > 99_999_999) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${label} inválido` });
+        return z.NEVER;
+      }
+      return n.toFixed(2);
+    });
+
 const schema = z.object({
   platformId: z.coerce.number().int().positive("Selecione a plataforma"),
+  categoryId: z.union([z.coerce.number().int().positive(), z.literal("")]).optional().transform((v) => (typeof v === "number" ? v : null)),
+  price: money("Preço"),
+  originalPrice: money("Preço original"),
+  isFeatured: z.boolean(),
   title: z.string().trim().min(3, "Título muito curto").max(200),
   description: z.string().trim().max(2000).optional().transform((v) => v || null),
   affiliateUrl: httpUrl,
@@ -39,6 +60,10 @@ const schema = z.object({
 function parse(form: FormData) {
   return schema.safeParse({
     platformId: form.get("platformId"),
+    categoryId: form.get("categoryId") ?? undefined,
+    price: form.get("price") ?? undefined,
+    originalPrice: form.get("originalPrice") ?? undefined,
+    isFeatured: form.get("isFeatured") === "on",
     title: form.get("title"),
     description: form.get("description") ?? undefined,
     affiliateUrl: form.get("affiliateUrl"),
@@ -76,6 +101,10 @@ export async function createOfferAction(_: ActionState, form: FormData): Promise
     const hours = typeof d.hours === "number" ? d.hours : DEFAULT_HOURS;
     await db.insert(offers).values({
       platformId: d.platformId,
+      categoryId: d.categoryId,
+      price: d.price,
+      originalPrice: d.originalPrice,
+      isFeatured: d.isFeatured,
       title: d.title,
       description: d.description,
       affiliateUrl: d.affiliateUrl,
@@ -116,6 +145,10 @@ export async function updateOfferAction(id: number, _: ActionState, form: FormDa
       .update(offers)
       .set({
         platformId: d.platformId,
+        categoryId: d.categoryId,
+        price: d.price,
+        originalPrice: d.originalPrice,
+        isFeatured: d.isFeatured,
         title: d.title,
         description: d.description,
         affiliateUrl: d.affiliateUrl,
@@ -162,4 +195,30 @@ export async function toggleOfferAction(id: number) {
   await db.update(offers).set({ isActive: sql`not ${offers.isActive}`, updatedAt: sql`now()` }).where(eq(offers.id, id));
   revalidatePath("/");
   revalidatePath("/admin/offers");
+}
+
+/** Estrela da listagem: liga/desliga "destaque na home" */
+export async function toggleFeaturedAction(id: number) {
+  await requireAdmin();
+  await db.update(offers).set({ isFeatured: sql`not ${offers.isFeatured}`, updatedAt: sql`now()` }).where(eq(offers.id, id));
+  revalidatePath("/");
+  revalidatePath("/admin/offers");
+}
+
+/** Duplicar: cria uma cópia pausada para editar (ex.: mesma oferta em outra loja) */
+export async function duplicateOfferAction(id: number) {
+  const user = await requireAdmin();
+  const [o] = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
+  if (!o) return;
+  const [copy] = await db
+    .insert(offers)
+    .values({
+      platformId: o.platformId, categoryId: o.categoryId, title: o.title, description: o.description,
+      price: o.price, originalPrice: o.originalPrice, affiliateUrl: o.affiliateUrl, coupon: o.coupon,
+      imagePath: await copyUpload(o.imagePath),
+      slug: await uniqueOfferSlug(o.title), isActive: false, isFeatured: false,
+      expiresAt: new Date(Date.now() + DEFAULT_HOURS * 3_600_000), createdBy: user.id,
+    })
+    .returning({ id: offers.id });
+  redirect(`/admin/offers/${copy.id}`);
 }

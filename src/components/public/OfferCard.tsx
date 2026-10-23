@@ -58,7 +58,7 @@ export function OfferCard({ offer }: { offer: PublicOffer }) {
         <div className="mt-auto space-y-2.5">
           {offer.coupon && <CouponButton code={offer.coupon} />}
           <a href={href} target="_blank" rel="sponsored noopener" className="btn-primary w-full whitespace-nowrap px-3">
-            Ver oferta<span className="hidden sm:inline"> na loja</span>
+            <span>Ver oferta<span className="hidden sm:inline"> na loja</span></span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
               <path d="M7 17 17 7M8 7h9v9" />
             </svg>

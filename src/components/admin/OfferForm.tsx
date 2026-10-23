@@ -2,6 +2,7 @@
 import { useActionState, useState } from "react";
 import type { ActionState } from "@/lib/utils";
 import { FormMessage, SubmitButton } from "./ui";
+import { ImageInput } from "./ImageInput";
 
 // Mesma regra do servidor (lib/slug.ts) — aqui só para pré-visualizar a URL
 const slugify = (s: string) =>
@@ -79,7 +80,7 @@ export function OfferForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="field">
               <label className="label" htmlFor="image">Enviar arquivo</label>
-              <input className="input" id="image" name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+              <ImageInput id="image" name="image" accept="image/png,image/jpeg,image/webp,image/gif" />
             </div>
             <div className="field">
               <label className="label" htmlFor="imageUrl">…ou URL da imagem</label>

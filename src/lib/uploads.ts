@@ -4,7 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 export const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR ?? "./uploads");
-const MAX_BYTES = Number(process.env.UPLOAD_MAX_MB ?? 5) * 1024 * 1024;
+const MAX_BYTES = Number(process.env.UPLOAD_MAX_MB ?? 8) * 1024 * 1024;
 
 const TYPES: Record<string, string> = {
   "image/png": "png",
@@ -45,9 +45,21 @@ export async function saveUpload(file: FormDataEntryValue | null, folder: "brand
   if (!ext) throw new UploadError("O conteúdo do arquivo não é uma imagem válida");
 
   const dir = path.join(UPLOAD_DIR, folder);
-  await mkdir(dir, { recursive: true });
   const name = `${randomUUID()}.${ext}`;
-  await writeFile(path.join(dir, name), buf);
+  try {
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, name), buf);
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    console.error(`[upload] falha ao gravar em ${dir}:`, err);
+    if (code === "EACCES" || code === "EPERM")
+      throw new UploadError(
+        `Sem permissão para gravar imagens em ${UPLOAD_DIR}. Confira o dono da pasta uploads no servidor (PUID/PGID) e reinicie o container.`,
+      );
+    if (code === "ENOSPC") throw new UploadError("Disco cheio: não há espaço para salvar a imagem.");
+    if (code === "EROFS") throw new UploadError("A pasta de uploads está montada como somente leitura.");
+    throw new UploadError(`Não foi possível salvar a imagem (${code ?? "erro desconhecido"}).`);
+  }
   return `/uploads/${folder}/${name}`;
 }
 

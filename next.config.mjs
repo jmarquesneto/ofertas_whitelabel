@@ -5,8 +5,9 @@ const nextConfig = {
   poweredByHeader: false,
   eslint: { ignoreDuringBuilds: true },
   experimental: {
-    // Uploads de logo/imagens passam por Server Actions
-    serverActions: { bodySizeLimit: "6mb" },
+    // Uploads passam por Server Actions. Limite alto aqui; o limite real (UPLOAD_MAX_MB)
+    // é checado no navegador e no servidor com mensagem amigável.
+    serverActions: { bodySizeLimit: "20mb" },
   },
   // Pastas de migração são lidas em tempo de execução (instrumentation.ts)
   outputFileTracingIncludes: {

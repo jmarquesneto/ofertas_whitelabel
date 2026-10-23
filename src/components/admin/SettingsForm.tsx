@@ -3,6 +3,7 @@ import { useActionState, useState } from "react";
 import type { SiteSettings } from "@/db/schema";
 import { updateSettingsAction } from "@/server/actions/settings";
 import { FormMessage, SubmitButton } from "./ui";
+import { ImageInput } from "./ImageInput";
 import { onColor } from "@/lib/color";
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
@@ -53,7 +54,7 @@ export function SettingsForm({ settings }: { settings: SiteSettings }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="field">
               <label className="label" htmlFor="logo">Logo</label>
-              <input className="input file:mr-3 file:rounded-md file:border-0 file:bg-surface-sunken file:px-3 file:py-1 file:text-sm" id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+              <ImageInput className="input file:mr-3 file:rounded-md file:border-0 file:bg-surface-sunken file:px-3 file:py-1 file:text-sm" id="logo" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
               <span className="hint">PNG, SVG ou WEBP com fundo transparente. Altura exibida: 40px.</span>
               {settings.logoPath && (
                 <label className="flex items-center gap-2 text-xs text-ink-muted"><input type="checkbox" name="removeLogo" /> Remover logo atual</label>
@@ -61,7 +62,7 @@ export function SettingsForm({ settings }: { settings: SiteSettings }) {
             </div>
             <div className="field">
               <label className="label" htmlFor="favicon">Favicon</label>
-              <input className="input file:mr-3 file:rounded-md file:border-0 file:bg-surface-sunken file:px-3 file:py-1 file:text-sm" id="favicon" name="favicon" type="file" accept="image/png,image/x-icon,image/svg+xml,image/vnd.microsoft.icon" />
+              <ImageInput className="input file:mr-3 file:rounded-md file:border-0 file:bg-surface-sunken file:px-3 file:py-1 file:text-sm" id="favicon" name="favicon" accept="image/png,image/x-icon,image/svg+xml,image/vnd.microsoft.icon" />
               <span className="hint">Quadrado, 512×512 PNG ou .ico.</span>
               {settings.faviconPath && (
                 <label className="flex items-center gap-2 text-xs text-ink-muted"><input type="checkbox" name="removeFavicon" /> Remover favicon atual</label>

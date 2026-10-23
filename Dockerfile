@@ -24,7 +24,7 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     UPLOAD_DIR=/app/uploads
 
-RUN apk add --no-cache tzdata wget \
+RUN apk add --no-cache tzdata wget su-exec \
  && addgroup -S -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs \
  && mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
 
@@ -34,14 +34,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Migrações SQL aplicadas automaticamente no boot (src/instrumentation.ts)
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 
-# Permite rodar com qualquer PUID/PGID (user: no compose, padrão do OMV)
+# O app roda com qualquer PUID/PGID (padrão do OMV): o entrypoint ajusta a
+# pasta de uploads como root e depois troca para esse usuário via su-exec.
 RUN chmod -R a+rwX /app/.next /app/uploads
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-USER nextjs
+ENV PUID=1000 PGID=100
 EXPOSE 3000
 VOLUME ["/app/uploads"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server.js"]

@@ -152,9 +152,8 @@ A imagem é compilada pelo GitHub Actions a cada push e publicada em `ghcr.io/jm
 ```bash
 DISCO=/srv/dev-disk-by-uuid-SEU-UUID
 mkdir -p $DISCO/appdata/vitrine/{postgres,uploads}
-id seu_usuario                                  # anote uid e gid
-chown -R 1000:100 $DISCO/appdata/vitrine/uploads  # use o seu uid:gid
-openssl rand -base64 48                         # guarde: será o APP_SECRET
+id seu_usuario                # anote uid e gid → PUID e PGID
+openssl rand -base64 48       # guarde: será o APP_SECRET
 ```
 
 **2. No Portainer:** *Stacks → Add stack → Repository*
@@ -188,7 +187,7 @@ TZ=America/Bahia
 | Variável | Padrão | Para que serve |
 | :--- | :---: | :--- |
 | `APPDATA_PATH` | — | Pasta absoluta com `postgres/` e `uploads/` (obrigatória) |
-| `PUID` / `PGID` | `1000` / `100` | Dono da pasta `uploads/` |
+| `PUID` / `PGID` | `1000` / `100` | Usuário que roda o app e é dono de `uploads/` (o container ajusta as permissões ao iniciar) |
 | `APP_PORT` | `3080` | Porta no host. Se estiver ocupada, troque só ela |
 | `POSTGRES_PASSWORD` | — | Senha do banco (obrigatória) |
 | `APP_SECRET` | — | Assina sessões e cifra o 2FA, com 32+ caracteres (obrigatória, **não troque depois**) |
@@ -196,7 +195,7 @@ TZ=America/Bahia
 | `COOKIE_SECURE` | `true` | `false` só para testar sem HTTPS |
 | `ALLOW_REGISTRATION` | `false` | `true` libera novos cadastros de administrador |
 | `OFFER_DEFAULT_HOURS` | `72` | Validade padrão das ofertas |
-| `UPLOAD_MAX_MB` | `5` | Tamanho máximo de imagens |
+| `UPLOAD_MAX_MB` | `8` | Tamanho máximo de imagens |
 | `TZ` | `America/Bahia` | Fuso horário dos gráficos |
 
 ### 🔄 Atualizar

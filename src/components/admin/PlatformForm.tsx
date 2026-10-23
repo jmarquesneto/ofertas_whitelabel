@@ -2,6 +2,7 @@
 import { useActionState } from "react";
 import type { ActionState } from "@/lib/utils";
 import { FormMessage, SubmitButton } from "./ui";
+import { ImageInput } from "./ImageInput";
 
 type Initial = { name: string; logoPath: string | null; isActive: boolean; sortOrder: number };
 
@@ -22,7 +23,7 @@ export function PlatformForm({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={initial.logoPath} alt="Logo atual" className="h-12 w-12 rounded-lg border border-line bg-white object-contain p-1" />
         )}
-        <input className="input" id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+        <ImageInput id="logo" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
         <span className="hint">Quadrado, fundo transparente ou branco. Exibido em 20–28px.</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

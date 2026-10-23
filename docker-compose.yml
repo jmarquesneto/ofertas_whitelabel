@@ -1,9 +1,9 @@
 # ------------------------------------------------------------------
 # Vitrine White Label — Stack para Portainer (pensado para OMV)
 #
-# Portainer → Stacks → Add stack → Repository
-#   URL: https://github.com/jmarquesneto/ofertas_whitelabel · Compose path: docker-compose.yml
+# Portainer → Stacks → Add stack → Web editor (cole este arquivo) ou Repository
 #   Preencha as variáveis do .env.example em "Environment variables".
+#   A imagem do app vem pronta do GitHub (ghcr.io); o Portainer não compila nada.
 #
 # Dados em CAMINHOS ABSOLUTOS (bind mounts), definidos por variável:
 #   APPDATA_PATH=/srv/dev-disk-by-uuid-XXXX/appdata/vitrine
@@ -14,11 +14,8 @@ name: vitrine
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    # Imagem construída localmente a partir do repositório: nunca tentar baixar do Docker Hub
-    pull_policy: build
+    # Imagem compilada pelo GitHub Actions a cada push (.github/workflows/docker.yml)
+    image: ghcr.io/jmarquesneto/ofertas_whitelabel:${IMAGE_TAG:-latest}
     container_name: vitrine-app
     restart: unless-stopped
     # Mesmo usuário/grupo dono da pasta no OMV (descubra com: id SEU_USUARIO)

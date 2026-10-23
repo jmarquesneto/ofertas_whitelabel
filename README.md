@@ -68,13 +68,15 @@ vitrine/
    ```
    A pasta `postgres/` não precisa de chown (a imagem do Postgres ajusta sozinha).
 2. **Escolha uma porta livre**: `ss -tlnp | grep -E ':3080\b'` (sem saída = livre). Também dá para ver em Portainer → Containers → coluna "Published Ports".
-3. Portainer → **Stacks → Add stack → Repository**: URL do repositório, referência `refs/heads/main`, compose `docker-compose.yml`.
+3. Portainer → **Stacks → Add stack → Web editor** e cole o `docker-compose.yml`. A imagem do app (`ghcr.io/jmarquesneto/ofertas_whitelabel:latest`) é compilada pelo GitHub Actions a cada push na `main`; o Portainer só baixa.
 4. Em **Environment variables**, preencha no mínimo `APPDATA_PATH`, `PUID`, `PGID`, `APP_PORT`, `POSTGRES_PASSWORD`, `APP_SECRET` (`openssl rand -base64 48`) e `PUBLIC_URL`.
 5. **Deploy the stack.** No primeiro boot o app cria as tabelas, a linha de configurações e 4 plataformas.
 6. Acesse `http://IP-DO-OMV:APP_PORT/admin/register` (com `COOKIE_SECURE=false` enquanto não houver HTTPS), crie o administrador e escaneie o QR Code.
 7. Proxy reverso com HTTPS apontando para `IP-DO-OMV:APP_PORT`, depois volte `COOKIE_SECURE=true`.
 
 **Porta ocupada?** Troque apenas `APP_PORT` e faça "Update the stack". A porta interna do container (3000) nunca muda, e o banco não publica porta nenhuma, então não disputa a 5432 com outro Postgres que você já tenha.
+
+**Atualizar**: depois de um push, espere o workflow "Docker image" ficar verde em *Actions* e, no Portainer, abra a stack → **Update the stack** com **Re-pull image** ligado.
 
 **Backup**: copie a pasta `APPDATA_PATH` com a stack parada, ou, com ela rodando:
 `docker exec vitrine-db pg_dump -U vitrine vitrine > backup.sql`

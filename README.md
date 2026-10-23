@@ -93,6 +93,13 @@ E roda em qualquer servidor caseiro: uma imagem Docker pronta, pensada para **Op
     </td>
   </tr>
   <tr>
+    <td colspan="2" align="center" valign="top">
+      <strong>🖼️ Banners do topo</strong><br><br>
+      <img src="docs/assets/painel-banners.png" alt="Gestão de banners" width="80%" />
+      <br><em>Carrossel com banners de texto ou arte pronta (computador + celular), ordem, pausa, agendamento e tempo de troca.</em>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" align="center" valign="top">
       <strong>🗃️ Categorias</strong><br><br>
       <img src="docs/assets/painel-categorias.png" alt="Categorias" width="100%" />
@@ -112,7 +119,8 @@ E roda em qualquer servidor caseiro: uma imagem Docker pronta, pensada para **Op
 ## 🌟 Recursos
 
 ### 1. 🛒 Vitrine pública
-* **Home** com hero configurável (título, trecho destacado, mascote e 3 selos), ofertas em destaque, categorias em círculos, novidades e faixa "somos uma página de afiliados".
+* **Home** com carrossel de banners, ofertas em destaque, categorias em círculos, novidades e faixa "somos uma página de afiliados".
+* **Banners** de dois tipos: **texto** (título, destaque, subtítulo, botão, mascote e selos, com cor de fundo opcional) ou **arte pronta** (versão computador 1920×600 e celular 1080×1080, com link). Ordem, pausar, duplicar, **agendamento de início/fim** e tempo de troca, tudo pelo painel. Autoplay pausa no hover, aceita swipe e respeita "reduzir movimento".
 * **Categorias com subcategorias** no menu, na lateral da listagem e em `/categorias`.
 * **Listagem** (`/ofertas`) com busca, filtro por categoria e loja e ordenação: mais recentes, mais populares, maior desconto, menor e maior preço.
 * **Card** com % de desconto, preço "de/por", cupom copiável, favorito e botão "Ver oferta" que vai direto à loja (`rel="sponsored"`).
@@ -270,6 +278,7 @@ Ou copie a pasta `APPDATA_PATH` inteira com a stack parada.
 | `users` | e-mail único, hash bcrypt, segredo TOTP cifrado, 2FA ativo, versão de sessão |
 | `site_settings` | linha única: nome, slogan, logo, favicon, cores hex (validadas no banco), hero, selos, faixa de afiliados, rodapé |
 | `platforms` | nome, slug, logo, ativa, ordem |
+| `banners` | tipo (texto/imagem), título, destaque, subtítulo, botão e link, imagens computador/celular, cor de fundo, ordem, ativo, início/fim |
 | `categories` | nome, slug, ícone, categoria pai (2 níveis), ordem, ativa |
 | `offers` | plataforma, categoria, título, preço, preço original, destaque, slug único, link de afiliado, cupom, imagem, expira em, cliques |
 | `clicks` | oferta, hash do IP, user-agent, referer, data |
@@ -293,6 +302,7 @@ npm run db:generate         # gera nova migração após alterar src/db/schema.t
 ## 🗺️ Próximos passos
 
 - [x] Categorias, preço "de/por", página da oferta e favoritos
+- [x] Carrossel de banners com agendamento
 - [ ] Gestão de usuários no painel (convidar admin, resetar 2FA, sair de todos os dispositivos)
 - [ ] Importar oferta a partir do link (título e imagem automáticos)
 - [ ] Postagem automática no Telegram/WhatsApp

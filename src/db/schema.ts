@@ -65,6 +65,8 @@ export const siteSettings = pgTable(
         { icon: "shield-check", label: "Lojas verificadas" },
         { icon: "truck", label: "Entrega para todo o Brasil" },
       ]),
+    // Tempo de troca do carrossel de banners (segundos)
+    bannerIntervalSec: integer("banner_interval_sec").notNull().default(6),
     // Faixa "somos afiliados" (substitui a newsletter da referência)
     affiliateTitle: varchar("affiliate_title", { length: 120 })
       .notNull()
@@ -103,6 +105,41 @@ export const platforms = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("platforms_slug_uq").on(t.slug)],
+);
+
+/* ------------------------------------------------------------------ */
+/* Banners do topo da home (carrossel)                                 */
+/*  kind = "text"  → título/destaque/subtítulo/botão + imagem/mascote  */
+/*  kind = "image" → arte pronta (desktop + celular) com link          */
+/* ------------------------------------------------------------------ */
+export const banners = pgTable(
+  "banners",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 80 }).notNull(), // nome interno no painel
+    kind: varchar("kind", { length: 10 }).notNull().default("text"),
+    headline: varchar("headline", { length: 120 }),
+    highlight: varchar("highlight", { length: 80 }),
+    subtitle: varchar("subtitle", { length: 240 }),
+    ctaLabel: varchar("cta_label", { length: 40 }),
+    ctaUrl: varchar("cta_url", { length: 500 }),
+    openNewTab: boolean("open_new_tab").notNull().default(false),
+    imagePath: varchar("image_path", { length: 500 }), // mascote (texto) ou arte desktop (imagem)
+    mobileImagePath: varchar("mobile_image_path", { length: 500 }), // arte do celular (imagem)
+    bgColor: varchar("bg_color", { length: 7 }), // vazio = cor secundária da marca
+    showBadges: boolean("show_badges").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("banners_live_idx").on(t.isActive, t.sortOrder),
+    check("banners_kind", sql`${t.kind} in ('text', 'image')`),
+    check("banners_bg_hex", sql`${t.bgColor} is null or ${t.bgColor} ~ '^#[0-9A-Fa-f]{6}$'`),
+  ],
 );
 
 /* ------------------------------------------------------------------ */
@@ -195,5 +232,6 @@ export const clicksRelations = relations(clicks, ({ one }) => ({
 export type Offer = typeof offers.$inferSelect;
 export type Platform = typeof platforms.$inferSelect;
 export type Category = typeof categories.$inferSelect;
+export type Banner = typeof banners.$inferSelect;
 export type SiteSettings = typeof siteSettings.$inferSelect;
 export type User = typeof users.$inferSelect;

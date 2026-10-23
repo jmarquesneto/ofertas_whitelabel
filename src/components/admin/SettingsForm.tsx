@@ -46,9 +46,6 @@ export function SettingsForm({ settings }: { settings: SiteSettings }) {
   const [name, setName] = useState(settings.siteName);
   const [primary, setPrimary] = useState(settings.primaryColor);
   const [secondary, setSecondary] = useState(settings.secondaryColor);
-  const [heroTitle, setHeroTitle] = useState(settings.heroTitle);
-  const [heroHighlight, setHeroHighlight] = useState(settings.heroHighlight);
-  const [heroSubtitle, setHeroSubtitle] = useState(settings.heroSubtitle);
   const badges = [0, 1, 2].map((i) => settings.heroBadges?.[i] ?? { icon: "tag", label: "" });
   const [badgeState, setBadgeState] = useState(badges);
   const fg = (hex: string) => (HEX.test(hex) ? `rgb(${onColor(hex)})` : "#fff");
@@ -92,48 +89,32 @@ export function SettingsForm({ settings }: { settings: SiteSettings }) {
           </div>
         </Section>
 
-        <Section title="Destaque da home (hero)" desc="O primeiro bloco que o visitante vê.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="field">
-              <label className="label" htmlFor="heroTitle">Título</label>
-              <input className="input" id="heroTitle" name="heroTitle" value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} required maxLength={120} />
-            </div>
-            <div className="field">
-              <label className="label" htmlFor="heroHighlight">Trecho destacado <span className="font-normal text-ink-faint">(na cor primária)</span></label>
-              <input className="input" id="heroHighlight" name="heroHighlight" value={heroHighlight} onChange={(e) => setHeroHighlight(e.target.value)} maxLength={80} />
-            </div>
+        <Section title="Selos dos banners" desc="Aparecem ao lado dos banners de texto (cada banner escolhe se mostra). O conteúdo dos banners fica em Banners.">
+          <div className="grid gap-2">
+            {badgeState.map((b, i) => (
+              <div key={i} className="flex gap-2">
+                <select name={`badgeIcon${i}`} value={b.icon} aria-label={`Ícone do selo ${i + 1}`}
+                  onChange={(e) => setBadgeState((s) => s.map((x, j) => (j === i ? { ...x, icon: e.target.value } : x)))}
+                  className="input w-40 shrink-0">
+                  {Object.entries(ICONS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+                <span className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-lg bg-surface-sunken"><Icon name={b.icon} className="h-5 w-5" /></span>
+                <input name={`badgeLabel${i}`} value={b.label} maxLength={40} aria-label={`Texto do selo ${i + 1}`} placeholder="Ex.: Lojas verificadas (vazio = esconder)"
+                  onChange={(e) => setBadgeState((s) => s.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                  className="input" />
+              </div>
+            ))}
           </div>
-          <div className="field">
-            <label className="label" htmlFor="heroSubtitle">Subtítulo</label>
-            <textarea className="input min-h-[72px]" id="heroSubtitle" name="heroSubtitle" value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} maxLength={240} />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="heroImage">Imagem / mascote</label>
-            <ImageInput className={fileCls} id="heroImage" name="heroImage" accept="image/png,image/webp,image/svg+xml,image/jpeg" />
-            <span className="hint">PNG com fundo transparente, de preferência quadrado (até 800×800). Também aparece na faixa de afiliados.</span>
-            {settings.heroImagePath && <label className="flex items-center gap-2 text-xs text-ink-muted"><input type="checkbox" name="removeHeroImage" /> Remover imagem atual</label>}
-          </div>
-          <div className="field">
-            <span className="label">Selos ao lado do hero <span className="font-normal text-ink-faint">(deixe o texto vazio para esconder)</span></span>
-            <div className="grid gap-2">
-              {badgeState.map((b, i) => (
-                <div key={i} className="flex gap-2">
-                  <select name={`badgeIcon${i}`} value={b.icon} aria-label={`Ícone do selo ${i + 1}`}
-                    onChange={(e) => setBadgeState((s) => s.map((x, j) => (j === i ? { ...x, icon: e.target.value } : x)))}
-                    className="input w-40 shrink-0">
-                    {Object.entries(ICONS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                  </select>
-                  <span className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-lg bg-surface-sunken"><Icon name={b.icon} className="h-5 w-5" /></span>
-                  <input name={`badgeLabel${i}`} value={b.label} maxLength={40} aria-label={`Texto do selo ${i + 1}`} placeholder="Ex.: Lojas verificadas"
-                    onChange={(e) => setBadgeState((s) => s.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-                    className="input" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <a href="/admin/banners" className="btn-ghost w-fit">Gerenciar banners →</a>
         </Section>
 
         <Section title="Faixa de afiliados" desc="Bloco de transparência no fim da home, explicando como o site ganha comissão.">
+          <div className="field">
+            <label className="label" htmlFor="heroImage">Imagem / mascote da faixa</label>
+            <ImageInput className={fileCls} id="heroImage" name="heroImage" accept="image/png,image/webp,image/svg+xml,image/jpeg" />
+            <span className="hint">PNG com fundo transparente. Opcional.</span>
+            {settings.heroImagePath && <label className="flex items-center gap-2 text-xs text-ink-muted"><input type="checkbox" name="removeHeroImage" /> Remover imagem atual</label>}
+          </div>
           <div className="field">
             <label className="label" htmlFor="affiliateTitle">Título</label>
             <input className="input" id="affiliateTitle" name="affiliateTitle" defaultValue={settings.affiliateTitle} required maxLength={120} />
@@ -165,8 +146,7 @@ export function SettingsForm({ settings }: { settings: SiteSettings }) {
               <span className="grid h-6 w-6 place-items-center rounded-full" style={{ background: P, color: fg(P) }}><Search className="h-3 w-3" /></span>
             </div>
             <div className="pt-2">
-              <p className="text-lg font-extrabold leading-tight">{heroTitle} <span style={{ color: P }}>{heroHighlight}</span></p>
-              <p className="mt-1 line-clamp-2 text-[11px] opacity-75">{heroSubtitle}</p>
+              <p className="text-lg font-extrabold leading-tight">Banner de texto <span style={{ color: P }}>em destaque</span></p>
               <span className="mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold" style={{ background: P, color: fg(P) }}>Ver ofertas <ArrowRight className="h-3 w-3" /></span>
             </div>
             <div className="flex flex-wrap gap-3 pt-1">

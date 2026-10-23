@@ -12,7 +12,7 @@ import { siteSettings } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { HEX_RE } from "@/lib/color";
 import { getSettings } from "@/lib/settings";
-import { removeUpload, saveUpload, UploadError } from "@/lib/uploads";
+import { removeUpload, removeUploadIfUnused, saveUpload, UploadError } from "@/lib/uploads";
 import type { ActionState } from "@/lib/utils";
 import { ICONS } from "@/components/Icon";
 
@@ -22,9 +22,6 @@ const schema = z.object({
   primaryColor: z.string().regex(HEX_RE, "Cor primária deve ser #RRGGBB").transform((v) => v.toUpperCase()),
   secondaryColor: z.string().regex(HEX_RE, "Cor secundária deve ser #RRGGBB").transform((v) => v.toUpperCase()),
   footerText: z.string().trim().min(10, "O aviso legal é obrigatório").max(2000),
-  heroTitle: z.string().trim().min(2, "Título do destaque muito curto").max(120),
-  heroHighlight: z.string().trim().max(80),
-  heroSubtitle: z.string().trim().max(240),
   heroBadges: z
     .array(z.object({ icon: z.string().refine((v) => v in ICONS, "Ícone inválido"), label: z.string().trim().max(40) }))
     .max(3),
@@ -41,9 +38,6 @@ export async function updateSettingsAction(_: ActionState, form: FormData): Prom
     primaryColor: form.get("primaryColor"),
     secondaryColor: form.get("secondaryColor"),
     footerText: form.get("footerText"),
-    heroTitle: form.get("heroTitle"),
-    heroHighlight: form.get("heroHighlight") ?? "",
-    heroSubtitle: form.get("heroSubtitle") ?? "",
     heroBadges: [0, 1, 2]
       .map((i) => ({ icon: String(form.get(`badgeIcon${i}`) ?? "tag"), label: String(form.get(`badgeLabel${i}`) ?? "") }))
       .filter((b) => b.label.trim()),
@@ -76,7 +70,7 @@ export async function updateSettingsAction(_: ActionState, form: FormData): Prom
 
     if (logoPath || removeLogo) await removeUpload(current.logoPath);
     if (faviconPath || removeFavicon) await removeUpload(current.faviconPath);
-    if (heroImagePath || removeHero) await removeUpload(current.heroImagePath);
+    if (heroImagePath || removeHero) await removeUploadIfUnused(current.heroImagePath);
   } catch (e) {
     if (e instanceof UploadError) return { error: e.message };
     throw e;

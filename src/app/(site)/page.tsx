@@ -1,6 +1,6 @@
 import { getSettings } from "@/lib/settings";
-import { categoryTree, listPublicOffers } from "@/server/queries";
-import { Hero } from "@/components/public/Hero";
+import { categoryTree, listLiveBanners, listPublicOffers } from "@/server/queries";
+import { BannerCarousel } from "@/components/public/BannerCarousel";
 import { OfferCard } from "@/components/public/OfferCard";
 import { SectionHeader } from "@/components/public/SectionHeader";
 import { CategoryCircles } from "@/components/public/CategoryCircles";
@@ -10,11 +10,12 @@ import { AffiliateBand } from "@/components/public/AffiliateBand";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [settings, tree, featured, latest] = await Promise.all([
+  const [settings, tree, featured, latest, slides] = await Promise.all([
     getSettings(),
     categoryTree(),
     listPublicOffers({ featured: true, sort: "populares", limit: 8 }),
     listPublicOffers({ sort: "recentes", limit: 12 }),
+    listLiveBanners(),
   ]);
   const featuredIds = new Set(featured.slice(0, 4).map((o) => o.id));
   const recent = latest.filter((o) => !featuredIds.has(o.id)).slice(0, 8);
@@ -22,7 +23,7 @@ export default async function Home() {
 
   return (
     <>
-      <Hero settings={settings} />
+      <BannerCarousel slides={slides} badges={settings.heroBadges ?? []} intervalSec={settings.bannerIntervalSec} />
 
       <div className="container-site space-y-12 py-10 sm:space-y-14 sm:py-12">
         {featured.length === 0 ? (

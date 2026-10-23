@@ -1,11 +1,12 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { BarChart3, Layers, Palette, Store, Tag } from "lucide-react";
+import { BarChart3, GalleryHorizontal, Layers, Palette, Store, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/admin", label: "Analytics", icon: BarChart3, exact: true },
   { href: "/admin/offers", label: "Ofertas", icon: Tag },
+  { href: "/admin/banners", label: "Banners", icon: GalleryHorizontal },
   { href: "/admin/categories", label: "Categorias", icon: Layers },
   { href: "/admin/platforms", label: "Plataformas", icon: Store },
   { href: "/admin/settings", label: "Aparência", icon: Palette },

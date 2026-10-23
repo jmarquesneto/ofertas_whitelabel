@@ -1,7 +1,7 @@
 import "server-only";
-import { and, asc, desc, eq, gt, ilike, inArray, or, sql, count } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql, count } from "drizzle-orm";
 import { db } from "@/db";
-import { categories, clicks, offers, platforms, type Category } from "@/db/schema";
+import { banners, categories, clicks, offers, platforms, type Category } from "@/db/schema";
 
 /** Condição de "oferta visível": ativa, dentro da validade e plataforma ativa */
 const visible = () => and(eq(offers.isActive, true), gt(offers.expiresAt, sql`now()`), eq(platforms.isActive, true));
@@ -232,4 +232,25 @@ export async function listAllCategories() {
     })
     .from(categories)
     .orderBy(asc(categories.sortOrder), asc(categories.name));
+}
+
+/* ----------------------------- Banners ----------------------------- */
+
+/** Banners no ar agora: ativos e dentro da janela de agendamento */
+export async function listLiveBanners() {
+  return db
+    .select()
+    .from(banners)
+    .where(
+      and(
+        eq(banners.isActive, true),
+        or(isNull(banners.startsAt), lte(banners.startsAt, sql`now()`)),
+        or(isNull(banners.endsAt), gt(banners.endsAt, sql`now()`)),
+      ),
+    )
+    .orderBy(asc(banners.sortOrder), asc(banners.id));
+}
+
+export async function listAllBanners() {
+  return db.select().from(banners).orderBy(asc(banners.sortOrder), asc(banners.id));
 }

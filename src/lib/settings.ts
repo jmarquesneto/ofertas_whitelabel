@@ -17,6 +17,7 @@ const FALLBACK: SiteSettings = {
   heroSubtitle: "A gente garimpa as melhores promoções da internet para você economizar.",
   heroImagePath: null,
   heroBadges: [],
+  bannerIntervalSec: 6,
   affiliateTitle: "Somos uma página de afiliados",
   affiliateText: "Indicamos ofertas de lojas parceiras e podemos receber comissão pelas compras feitas pelos nossos links.",
   footerText: "Este site participa de programas de afiliados.",

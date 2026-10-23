@@ -1,7 +1,7 @@
 import path from "node:path";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { db } from "./db";
-import { siteSettings, platforms, categories } from "./db/schema";
+import { siteSettings, platforms, categories, banners } from "./db/schema";
 
 /** Só roda no runtime Node (importado por instrumentation.ts) */
 export async function bootstrap() {
@@ -17,10 +17,20 @@ export async function bootstrap() {
     }
   }
 
-  await db
+  const created = await db
     .insert(siteSettings)
     .values({ id: 1, siteName: process.env.DEFAULT_SITE_NAME || "Minha Vitrine" })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ id: siteSettings.id });
+
+  // Instalação nova: primeiro banner de exemplo (em instalações antigas a migração converte o hero)
+  if (created.length) {
+    await db.insert(banners).values({
+      name: "Banner principal", kind: "text", headline: "As melhores ofertas,", highlight: "todos os dias!",
+      subtitle: "A gente garimpa as melhores promoções da internet para você economizar sem perder tempo.",
+      ctaLabel: "Ver ofertas", ctaUrl: "#ofertas", sortOrder: 1,
+    });
+  }
 
   const existing = await db.select({ id: platforms.id }).from(platforms).limit(1);
   if (existing.length === 0) {

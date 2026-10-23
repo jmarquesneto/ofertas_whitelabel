@@ -86,3 +86,22 @@ export async function copyUpload(publicPath: string | null | undefined): Promise
     return null;
   }
 }
+
+/**
+ * Um mesmo arquivo pode ser usado em mais de um lugar (ex.: mascote do hero
+ * convertido em banner e também na faixa de afiliados). Só apaga se ninguém
+ * mais aponta para ele.
+ */
+export async function removeUploadIfUnused(publicPath: string | null | undefined) {
+  if (!publicPath?.startsWith("/uploads/")) return;
+  const { db } = await import("@/db");
+  const { sql } = await import("drizzle-orm");
+  const r = await db.execute<{ n: number }>(sql`
+    select (
+      (select count(*) from site_settings where ${publicPath} in (logo_path, favicon_path, hero_image_path)) +
+      (select count(*) from banners where ${publicPath} in (image_path, mobile_image_path)) +
+      (select count(*) from offers where image_path = ${publicPath}) +
+      (select count(*) from platforms where logo_path = ${publicPath})
+    )::int as n`);
+  if ((r.rows[0]?.n ?? 0) === 0) await removeUpload(publicPath);
+}

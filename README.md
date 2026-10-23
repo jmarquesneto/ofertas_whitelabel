@@ -15,7 +15,7 @@ Next.js 15 (App Router) · TypeScript · Tailwind CSS · PostgreSQL 16 · Drizzl
 
 ```
 vitrine/
-├─ docker-compose.yml          # Stack do Portainer (app + postgres + volumes)
+├─ docker-compose.yml          # Stack do Portainer (app + postgres, caminhos absolutos)
 ├─ Dockerfile                  # multi-stage, Next standalone, usuário não-root
 ├─ .env.example
 ├─ drizzle/0000_init.sql       # migração gerada (aplicada sozinha no boot)
@@ -59,19 +59,25 @@ vitrine/
    └─ components/{public,admin}/
 ```
 
-## Deploy no Portainer
+## Deploy no Portainer (OMV)
 
-1. Suba este projeto para um repositório Git (GitHub/GitLab, pode ser privado).
-2. Portainer → **Stacks → Add stack → Repository**. Informe a URL do repo e `docker-compose.yml`.
-3. Em **Environment variables**, preencha pelo menos `POSTGRES_PASSWORD`, `APP_SECRET` (`openssl rand -base64 48`) e `PUBLIC_URL`.
-4. **Deploy the stack**. No primeiro boot o app cria as tabelas, a linha de configurações e 4 plataformas.
-5. Acesse `https://seu-dominio/admin/register`, crie o primeiro administrador e escaneie o QR Code no Google Authenticator. Depois disso o cadastro se fecha sozinho (`ALLOW_REGISTRATION=false`).
-6. Coloque um proxy reverso com HTTPS na frente (Nginx Proxy Manager, Traefik ou Cloudflare Tunnel) apontando para a porta 3000. Os cookies de sessão exigem HTTPS (`COOKIE_SECURE=true`).
+1. **Crie as pastas** no OMV (via SSH), num disco ext4/btrfs:
+   ```bash
+   mkdir -p /srv/dev-disk-by-uuid-XXXX/appdata/vitrine/{postgres,uploads}
+   chown -R 1000:100 /srv/dev-disk-by-uuid-XXXX/appdata/vitrine/uploads   # mesmo PUID:PGID do .env
+   ```
+   A pasta `postgres/` não precisa de chown (a imagem do Postgres ajusta sozinha).
+2. **Escolha uma porta livre**: `ss -tlnp | grep -E ':3080\b'` (sem saída = livre). Também dá para ver em Portainer → Containers → coluna "Published Ports".
+3. Portainer → **Stacks → Add stack → Repository**: URL do repositório, referência `refs/heads/main`, compose `docker-compose.yml`.
+4. Em **Environment variables**, preencha no mínimo `APPDATA_PATH`, `PUID`, `PGID`, `APP_PORT`, `POSTGRES_PASSWORD`, `APP_SECRET` (`openssl rand -base64 48`) e `PUBLIC_URL`.
+5. **Deploy the stack.** No primeiro boot o app cria as tabelas, a linha de configurações e 4 plataformas.
+6. Acesse `http://IP-DO-OMV:APP_PORT/admin/register` (com `COOKIE_SECURE=false` enquanto não houver HTTPS), crie o administrador e escaneie o QR Code.
+7. Proxy reverso com HTTPS apontando para `IP-DO-OMV:APP_PORT`, depois volte `COOKIE_SECURE=true`.
 
-Volumes: `vitrine_pgdata` (banco) e `vitrine_uploads` (logos, favicons e imagens). Backup do banco:
+**Porta ocupada?** Troque apenas `APP_PORT` e faça "Update the stack". A porta interna do container (3000) nunca muda, e o banco não publica porta nenhuma, então não disputa a 5432 com outro Postgres que você já tenha.
+
+**Backup**: copie a pasta `APPDATA_PATH` com a stack parada, ou, com ela rodando:
 `docker exec vitrine-db pg_dump -U vitrine vitrine > backup.sql`
-
-> O "Web editor" do Portainer não faz build. Nesse caso, publique a imagem (`docker build -t ghcr.io/voce/vitrine . && docker push …`) e troque `build:` por `image:` no compose.
 
 ## Desenvolvimento local
 

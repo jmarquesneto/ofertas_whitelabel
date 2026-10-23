@@ -34,6 +34,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Migrações SQL aplicadas automaticamente no boot (src/instrumentation.ts)
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 
+# Permite rodar com qualquer PUID/PGID (user: no compose, padrão do OMV)
+RUN chmod -R a+rwX /app/.next /app/uploads
+
 USER nextjs
 EXPOSE 3000
 VOLUME ["/app/uploads"]

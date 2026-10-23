@@ -1,12 +1,14 @@
 # ------------------------------------------------------------------
-# Vitrine White Label — Stack para Portainer
+# Vitrine White Label — Stack para Portainer (pensado para OMV)
 #
-# Portainer → Stacks → Add stack
-#   • "Repository": aponte para o repositório Git (recomendado — ele faz o build)
-#   • ou "Web editor": cole este arquivo e use uma imagem já publicada
-#     (troque `build:` por `image: ghcr.io/SEU_USUARIO/vitrine:latest`)
-#   • Em "Environment variables" preencha as variáveis do .env.example
-#     (ou "Load variables from .env file")
+# Portainer → Stacks → Add stack → Repository
+#   URL: https://github.com/jmarquesneto/ofertas_whitelabel · Compose path: docker-compose.yml
+#   Preencha as variáveis do .env.example em "Environment variables".
+#
+# Dados em CAMINHOS ABSOLUTOS (bind mounts), definidos por variável:
+#   APPDATA_PATH=/srv/dev-disk-by-uuid-XXXX/appdata/vitrine
+#     ├─ postgres/   → banco de dados
+#     └─ uploads/    → logos, favicons e imagens das ofertas
 # ------------------------------------------------------------------
 name: vitrine
 
@@ -18,13 +20,15 @@ services:
     image: vitrine-white-label:latest
     container_name: vitrine-app
     restart: unless-stopped
+    # Mesmo usuário/grupo dono da pasta no OMV (descubra com: id SEU_USUARIO)
+    user: "${PUID:-1000}:${PGID:-100}"
     depends_on:
       db:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-vitrine}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vitrine}
       APP_SECRET: ${APP_SECRET:?defina APP_SECRET com 32+ caracteres}
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3080}
       DEFAULT_SITE_NAME: ${DEFAULT_SITE_NAME:-Minha Vitrine}
       TOTP_ISSUER: ${TOTP_ISSUER:-Vitrine Admin}
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
@@ -33,11 +37,11 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       TZ: ${TZ:-America/Bahia}
     volumes:
-      - uploads:/app/uploads
+      - ${APPDATA_PATH:?defina APPDATA_PATH (caminho absoluto)}/uploads:/app/uploads
     ports:
-      # Remova se usar proxy reverso (Nginx Proxy Manager / Traefik) na mesma rede
-      - "${APP_PORT:-3000}:3000"
-    networks: [internal, web]
+      # Porta do HOST:porta interna. Se a porta estiver ocupada, mude só APP_PORT.
+      - "${APP_PORT:-3080}:3000"
+    networks: [internal]
 
   db:
     image: postgres:16-alpine
@@ -49,22 +53,15 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-vitrine}
       TZ: ${TZ:-America/Bahia}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ${APPDATA_PATH:?defina APPDATA_PATH (caminho absoluto)}/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
-    networks: [internal] # banco nunca exposto para fora
-
-volumes:
-  pgdata:
-    name: vitrine_pgdata
-  uploads:
-    name: vitrine_uploads
+    # Sem "ports": o banco só é acessível pelo app, então não disputa a 5432 com outro Postgres
+    networks: [internal]
 
 networks:
   internal:
     name: vitrine_internal
-  web:
-    name: vitrine_web

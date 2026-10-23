@@ -17,7 +17,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: vitrine-white-label:latest
+    # Imagem construída localmente a partir do repositório: nunca tentar baixar do Docker Hub
+    pull_policy: build
     container_name: vitrine-app
     restart: unless-stopped
     # Mesmo usuário/grupo dono da pasta no OMV (descubra com: id SEU_USUARIO)

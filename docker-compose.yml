@@ -1,0 +1,70 @@
+# ------------------------------------------------------------------
+# Vitrine White Label — Stack para Portainer
+#
+# Portainer → Stacks → Add stack
+#   • "Repository": aponte para o repositório Git (recomendado — ele faz o build)
+#   • ou "Web editor": cole este arquivo e use uma imagem já publicada
+#     (troque `build:` por `image: ghcr.io/SEU_USUARIO/vitrine:latest`)
+#   • Em "Environment variables" preencha as variáveis do .env.example
+#     (ou "Load variables from .env file")
+# ------------------------------------------------------------------
+name: vitrine
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vitrine-white-label:latest
+    container_name: vitrine-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-vitrine}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vitrine}
+      APP_SECRET: ${APP_SECRET:?defina APP_SECRET com 32+ caracteres}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      DEFAULT_SITE_NAME: ${DEFAULT_SITE_NAME:-Minha Vitrine}
+      TOTP_ISSUER: ${TOTP_ISSUER:-Vitrine Admin}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
+      OFFER_DEFAULT_HOURS: ${OFFER_DEFAULT_HOURS:-72}
+      UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-5}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      TZ: ${TZ:-America/Bahia}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      # Remova se usar proxy reverso (Nginx Proxy Manager / Traefik) na mesma rede
+      - "${APP_PORT:-3000}:3000"
+    networks: [internal, web]
+
+  db:
+    image: postgres:16-alpine
+    container_name: vitrine-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vitrine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-vitrine}
+      TZ: ${TZ:-America/Bahia}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [internal] # banco nunca exposto para fora
+
+volumes:
+  pgdata:
+    name: vitrine_pgdata
+  uploads:
+    name: vitrine_uploads
+
+networks:
+  internal:
+    name: vitrine_internal
+  web:
+    name: vitrine_web

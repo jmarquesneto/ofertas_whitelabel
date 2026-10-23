@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Valores padrão — substituídos em tempo de execução pelo <html style> do layout
+   com as cores salvas em site_settings. */
+:root {
+  --c-primary: 194 65 12;
+  --c-on-primary: 255 255 255;
+  --c-secondary: 20 66 60;
+  --c-on-secondary: 255 255 255;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body { @apply bg-surface text-ink font-sans antialiased; }
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold
+           transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary { @apply btn bg-primary text-primary-fg hover:bg-primary/90 focus-visible:outline-primary; }
+  .btn-secondary { @apply btn bg-secondary text-secondary-fg hover:bg-secondary/90 focus-visible:outline-secondary; }
+  .btn-ghost { @apply btn border border-line bg-surface-raised text-ink hover:bg-surface-sunken focus-visible:outline-ink; }
+  .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50 focus-visible:outline-red-600; }
+
+  .field { @apply grid gap-1.5; }
+  .label { @apply text-sm font-medium text-ink; }
+  .hint { @apply text-xs text-ink-muted; }
+  .input {
+    @apply w-full rounded-lg border border-line bg-surface-raised px-3 py-2.5 text-sm text-ink
+           placeholder:text-ink-faint focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25;
+  }
+  .card { @apply rounded-card border border-line bg-surface-raised; }
+  .table-head { @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-muted; }
+  .table-cell { @apply border-t border-line px-4 py-3 align-middle text-sm; }
+}

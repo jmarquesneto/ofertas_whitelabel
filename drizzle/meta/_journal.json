@@ -29,6 +29,13 @@
       "when": 1792801323934,
       "tag": "0003_usuarios",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792870916188,
+      "tag": "0004_robo_whatsapp",
+      "breakpoints": true
     }
   ]
 }

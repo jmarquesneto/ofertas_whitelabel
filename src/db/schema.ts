@@ -216,11 +216,21 @@ export const offers = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     clicksCount: integer("clicks_count").notNull().default(0), // contador desnormalizado
     createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+    // Origem: "manual" (painel) ou "bot" (coletor automático)
+    source: varchar("source", { length: 10 }).notNull().default("manual"),
+    // Produto na loja de origem, ex.: "mercadolivre:MLB123" — usado para não repetir ofertas do robô
+    externalId: varchar("external_id", { length: 140 }),
+    // null = publicada normalmente · "pending" = aguardando aprovação · "rejected" = descartada
+    reviewStatus: varchar("review_status", { length: 10 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex("offers_slug_uq").on(t.slug),
+    index("offers_external_idx").on(t.externalId, t.createdAt),
+    index("offers_review_idx").on(t.reviewStatus),
+    check("offers_source", sql`${t.source} in ('manual', 'bot')`),
+    check("offers_review_status", sql`${t.reviewStatus} is null or ${t.reviewStatus} in ('pending', 'rejected')`),
     index("offers_home_idx").on(t.isActive, t.expiresAt),
     index("offers_platform_idx").on(t.platformId),
     index("offers_category_idx").on(t.categoryId),
@@ -245,6 +255,96 @@ export const clicks = pgTable(
   (t) => [index("clicks_offer_time_idx").on(t.offerId, t.createdAt), index("clicks_time_idx").on(t.createdAt)],
 );
 
+/* ------------------------------------------------------------------ */
+/* Robô de ofertas (coletor) — linha única id=1                        */
+/*  Segredos das lojas ficam cifrados (AES-256-GCM, APP_SECRET)        */
+/* ------------------------------------------------------------------ */
+export type BotSources = {
+  mercadolivre: { enabled: boolean; etiqueta: string; paginas: number };
+  amazon: {
+    enabled: boolean; tag: string; credentialId: string; credentialSecretEnc: string | null;
+    paginas: number; requisicoesPorCiclo: number; buscas: string[];
+  };
+  shopee: { enabled: boolean; appId: string; appSecretEnc: string | null; limite: number; buscas: string[] };
+};
+export type BotStatus = {
+  lastCycleAt?: string;
+  lastCycle?: { coletadas: number; aprovadas: number; enviadas: number; erro?: string };
+  sources?: Record<string, { ok: boolean; msg: string; at: string }>;
+  mlSession?: boolean;
+  mlLoginOpen?: boolean;
+  running?: boolean;
+  seenAt?: string; // último contato do coletor
+};
+
+export const botSettings = pgTable(
+  "bot_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    enabled: boolean("enabled").notNull().default(false),
+    // "review" = esteira de aprovação · "direct" = publica e envia direto
+    mode: varchar("mode", { length: 10 }).notNull().default("review"),
+    intervalMinutes: integer("interval_minutes").notNull().default(45),
+    maxPerCycle: integer("max_per_cycle").notNull().default(3),
+    spacingSeconds: integer("spacing_seconds").notNull().default(120),
+    noRepeatDays: integer("no_repeat_days").notNull().default(7),
+    activeFrom: varchar("active_from", { length: 5 }).notNull().default("08:00"),
+    activeTo: varchar("active_to", { length: 5 }).notNull().default("23:00"),
+    minDiscount: integer("min_discount").notNull().default(25),
+    maxDiscount: integer("max_discount").notNull().default(100),
+    minPrice: numeric("min_price", { precision: 10, scale: 2 }),
+    maxPrice: numeric("max_price", { precision: 10, scale: 2 }),
+    blockedWords: jsonb("blocked_words").$type<string[]>().notNull().default([]),
+    niches: jsonb("niches").$type<string[]>().notNull().default([]),
+    sources: jsonb("sources").$type<BotSources>().notNull(),
+    status: jsonb("status").$type<BotStatus>().notNull().default({}),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("bot_settings_singleton", sql`${t.id} = 1`),
+    check("bot_settings_mode", sql`${t.mode} in ('review', 'direct')`),
+  ],
+);
+
+/* ------------------------------------------------------------------ */
+/* WhatsApp (Evolution API) — linha única id=1                         */
+/* ------------------------------------------------------------------ */
+export const whatsappSettings = pgTable(
+  "whatsapp_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    enabled: boolean("enabled").notNull().default(false),
+    baseUrl: varchar("base_url", { length: 300 }).notNull().default("http://evolution-api:8080"),
+    apiKeyEnc: text("api_key_enc"),
+    instance: varchar("instance", { length: 80 }).notNull().default(""),
+    groupJid: varchar("group_jid", { length: 80 }).notNull().default(""),
+    minGapSeconds: integer("min_gap_seconds").notNull().default(60),
+    sendImage: boolean("send_image").notNull().default(true),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("whatsapp_settings_singleton", sql`${t.id} = 1`)],
+);
+
+/* Fila e histórico de envios ao grupo */
+export const whatsappSends = pgTable(
+  "whatsapp_sends",
+  {
+    id: serial("id").primaryKey(),
+    offerId: integer("offer_id").notNull().references(() => offers.id, { onDelete: "cascade" }),
+    // queued → sending → sent | failed
+    status: varchar("status", { length: 10 }).notNull().default("queued"),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("whatsapp_sends_status_idx").on(t.status, t.createdAt),
+    index("whatsapp_sends_offer_idx").on(t.offerId),
+    check("whatsapp_sends_status", sql`${t.status} in ('queued', 'sending', 'sent', 'failed')`),
+  ],
+);
+
 /* Relações (para queries com `with`) */
 export const platformsRelations = relations(platforms, ({ many }) => ({ offers: many(offers) }));
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -256,6 +356,10 @@ export const offersRelations = relations(offers, ({ one, many }) => ({
   platform: one(platforms, { fields: [offers.platformId], references: [platforms.id] }),
   category: one(categories, { fields: [offers.categoryId], references: [categories.id] }),
   clicks: many(clicks),
+  whatsappSends: many(whatsappSends),
+}));
+export const whatsappSendsRelations = relations(whatsappSends, ({ one }) => ({
+  offer: one(offers, { fields: [whatsappSends.offerId], references: [offers.id] }),
 }));
 export const clicksRelations = relations(clicks, ({ one }) => ({
   offer: one(offers, { fields: [clicks.offerId], references: [offers.id] }),

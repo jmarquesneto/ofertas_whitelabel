@@ -1,7 +1,9 @@
 import path from "node:path";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { db } from "./db";
-import { siteSettings, platforms, categories, banners } from "./db/schema";
+import { siteSettings, platforms, categories, banners, botSettings, whatsappSettings } from "./db/schema";
+import { DEFAULT_SOURCES } from "./lib/bot";
+import { startWhatsappWorker } from "./server/whatsapp";
 
 /** Só roda no runtime Node (importado por instrumentation.ts) */
 export async function bootstrap() {
@@ -64,5 +66,19 @@ export async function bootstrap() {
     }
   }
 
+  // Robô e WhatsApp: linhas únicas de configuração (desligados até o admin configurar)
+  await db.insert(botSettings).values({ id: 1, sources: DEFAULT_SOURCES }).onConflictDoNothing();
+  await db.insert(whatsappSettings).values({ id: 1 }).onConflictDoNothing();
+  // As lojas do robô precisam existir como plataforma
+  await db
+    .insert(platforms)
+    .values([
+      { name: "Shopee", slug: "shopee", sortOrder: 1 },
+      { name: "Mercado Livre", slug: "mercado-livre", sortOrder: 2 },
+      { name: "Amazon", slug: "amazon", sortOrder: 3 },
+    ])
+    .onConflictDoNothing();
+
+  await startWhatsappWorker();
   console.log("[boot] migrações aplicadas, configurações prontas");
 }

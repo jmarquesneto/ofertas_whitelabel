@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ExternalLink, LogOut, ShieldAlert } from "lucide-react";
 import { and, count, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { backupCodes } from "@/db/schema";
+import { backupCodes, offers } from "@/db/schema";
 import { allowedPages, requireUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { roleLabel } from "@/lib/permissions";
@@ -19,9 +19,10 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   // Senha resetada pelo administrador: só libera o painel depois de criar uma nova
   if (user.mustChangePassword && !path.startsWith("/admin/perfil")) redirect("/admin/perfil?trocar-senha=1");
 
-  const [pages, [{ n: codesLeft }]] = await Promise.all([
+  const [pages, [{ n: codesLeft }], [{ n: pending }]] = await Promise.all([
     allowedPages(user.role),
     db.select({ n: count() }).from(backupCodes).where(and(eq(backupCodes.userId, user.id), isNull(backupCodes.usedAt))),
+    db.select({ n: count() }).from(offers).where(eq(offers.reviewStatus, "pending")),
   ]);
 
   return (
@@ -39,7 +40,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           )}
           <span className="mt-1.5 block text-xs text-white/55">Painel administrativo</span>
         </a>
-        <AdminNav allowed={pages} />
+        <AdminNav allowed={pages} badges={{ approval: pending }} />
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/10 pt-4 lg:mt-auto lg:block">
           <a href="/admin/perfil" className="flex min-w-0 items-center gap-2.5 rounded-xl p-1.5 transition hover:bg-white/10">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-bold">{user.name.charAt(0).toUpperCase()}</span>

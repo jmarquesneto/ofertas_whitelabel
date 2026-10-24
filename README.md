@@ -170,6 +170,21 @@ sequenceDiagram
 * Ofertas com **destaque na home**, pausar, renovar, **duplicar**, categoria e preço "de/por" com desconto calculado.
 * CRUD de **categorias** (2 níveis, com ícone) e de **plataformas**.
 
+### 6. 🤖 Robô de ofertas
+* Garimpa promoções no **Mercado Livre, Amazon e Shopee** e gera **os seus links de afiliado** (Linkbuilder do ML, tag da Amazon, Open API da Shopee).
+* Chave de modo: **esteira de aprovação** (você aprova cada oferta) ou **publicar direto**.
+* Ciclo configurável (padrão 45 min), ofertas por ciclo, desconto mínimo e máximo, faixa de preço, **palavras bloqueadas**, dias sem repetir o mesmo produto e horário de busca.
+* Cada loja tem o seu **liga/desliga**, credenciais (segredos cifrados no banco) e botão **Testar busca**.
+* **Nichos** (tecnologia, casa, games, moda…) que viram as categorias certas em cada loja.
+* **Importar por link**: cole o link de um produto e ele entra na aprovação com foto, preço e link de afiliado.
+* Login do Mercado Livre pelo próprio painel: o Chrome do robô abre no navegador (noVNC), com senha de uso único.
+
+### 7. 💬 WhatsApp (Evolution API)
+* Envio ao grupo com **foto, preço de/por, desconto, cupom e o link curto** (os cliques contam no Analytics).
+* **Fila com intervalo mínimo** entre mensagens para proteger o número; histórico com **reenviar**.
+* Checkbox "Enviar ao grupo" ao publicar, botão de envio na lista de ofertas e na aprovação.
+* Verificar conexão, escolher o grupo numa lista e mensagem de teste, tudo no painel.
+
 ---
 
 ## 🚀 Instalação (Portainer + OMV)
@@ -180,9 +195,11 @@ A imagem é compilada pelo GitHub Actions a cada push e publicada em `ghcr.io/jm
 
 ```bash
 DISCO=/srv/dev-disk-by-uuid-SEU-UUID
-mkdir -p $DISCO/appdata/vitrine/{postgres,uploads}
+mkdir -p $DISCO/appdata/vitrine/{postgres,uploads,coletor}
 id seu_usuario                # anote uid e gid → PUID e PGID
 openssl rand -base64 48       # guarde: será o APP_SECRET
+openssl rand -hex 32          # guarde: será o BOT_TOKEN
+docker network create evolution_net   # só se você NÃO tiver a stack do Evolution
 ```
 
 **2. No Portainer:** *Stacks → Add stack → Repository*
@@ -202,6 +219,8 @@ PGID=100
 APP_PORT=3080
 POSTGRES_PASSWORD=senha-forte-so-letras-e-numeros
 APP_SECRET=resultado-do-openssl
+BOT_TOKEN=resultado-do-openssl-hex
+NOVNC_URL=http://IP-DO-OMV:6080
 PUBLIC_URL=http://IP-DO-OMV:3080
 COOKIE_SECURE=false
 TZ=America/Bahia
@@ -215,11 +234,15 @@ TZ=America/Bahia
 
 | Variável | Padrão | Para que serve |
 | :--- | :---: | :--- |
-| `APPDATA_PATH` | — | Pasta absoluta com `postgres/` e `uploads/` (obrigatória) |
+| `APPDATA_PATH` | — | Pasta absoluta com `postgres/`, `uploads/` e `coletor/` (obrigatória) |
 | `PUID` / `PGID` | `1000` / `100` | Usuário que roda o app e é dono de `uploads/` (o container ajusta as permissões ao iniciar) |
 | `APP_PORT` | `3080` | Porta no host. Se estiver ocupada, troque só ela |
 | `POSTGRES_PASSWORD` | — | Senha do banco (obrigatória) |
-| `APP_SECRET` | — | Assina sessões e cifra o 2FA, com 32+ caracteres (obrigatória, **não troque depois**) |
+| `APP_SECRET` | — | Assina sessões e cifra o 2FA e os segredos das lojas e do WhatsApp, com 32+ caracteres (obrigatória, **não troque depois**) |
+| `BOT_TOKEN` | — | Chave que o app e o coletor usam para conversar, 32+ caracteres (obrigatória) |
+| `NOVNC_PORT` | `6080` | Porta do noVNC (login do Mercado Livre). Não encaminhe no roteador |
+| `NOVNC_URL` | — | Endereço do noVNC na sua rede, ex.: `http://192.168.0.10:6080` |
+| `EVOLUTION_NETWORK` | `evolution_net` | Rede da stack do Evolution API (WhatsApp) |
 | `PUBLIC_URL` | `http://localhost:3080` | Endereço público, usado na prévia do link curto |
 | `COOKIE_SECURE` | `true` | `false` só para testar sem HTTPS |
 | `ALLOW_REGISTRATION` | `false` | `true` libera novos cadastros de administrador |
@@ -309,8 +332,8 @@ npm run db:generate         # gera nova migração após alterar src/db/schema.t
 - [x] Categorias, preço "de/por", página da oferta e favoritos
 - [x] Carrossel de banners com agendamento
 - [x] Usuários, grupos com permissões por página, Meu perfil e códigos de recuperação do 2FA
-- [ ] Importar oferta a partir do link (título e imagem automáticos)
-- [ ] Postagem automática no Telegram/WhatsApp
+- [x] Importar oferta a partir do link (título e imagem automáticos)
+- [x] Robô de ofertas (ML, Amazon, Shopee) e postagem automática no WhatsApp
 - [ ] Rate limit em Redis para múltiplas réplicas
 
 ---
@@ -344,5 +367,7 @@ Se você quer usar este sistema em um **produto ou serviço fechado**, como reve
 | **Drizzle ORM** | Camada de banco e migrações | [orm.drizzle.team](https://orm.drizzle.team) |
 | **Tailwind CSS** | Sistema de estilos | [tailwindcss.com](https://tailwindcss.com) |
 | **otplib** | Códigos TOTP do 2FA | [GitHub](https://github.com/yeojz/otplib) |
+| **Bot de Ofertas para Telegram** (projeto público) | Base do coletor: busca nas lojas e geração de links de afiliado, adaptada para a vitrine e o WhatsApp | [coletor/](coletor/README.md) |
+| **Evolution API** | Ponte com o WhatsApp | [GitHub](https://github.com/EvolutionAPI/evolution-api) |
 
 <p align="center"><sub>As ilustrações de produtos das capturas de tela são fictícias, criadas só para demonstração. Marcas citadas pertencem aos seus donos.</sub></p>

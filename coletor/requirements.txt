@@ -1,0 +1,6 @@
+# Versões do uv.lock do bot original
+requests==2.34.2
+beautifulsoup4==4.15.0
+soupsieve==2.9.2
+lxml==6.1.2
+playwright==1.62.0

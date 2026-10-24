@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql, count } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql, count, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { banners, categories, clicks, offers, platforms, type Category } from "@/db/schema";
 
@@ -192,12 +192,13 @@ export async function clicksByOffer(limit = 50) {
     })
     .from(offers)
     .innerJoin(platforms, eq(platforms.id, offers.platformId))
+    .where(isNull(offers.reviewStatus))
     .orderBy(desc(offers.clicksCount), desc(offers.createdAt))
     .limit(limit);
 }
 
 export async function listAdminOffers(filter: "live" | "expired" | "all", q?: string) {
-  const conds = [];
+  const conds: (SQL | undefined)[] = [isNull(offers.reviewStatus)]; // pendentes/descartadas do robô ficam em Aprovação
   if (filter === "live") conds.push(and(eq(offers.isActive, true), gt(offers.expiresAt, sql`now()`)));
   if (filter === "expired") conds.push(or(eq(offers.isActive, false), sql`${offers.expiresAt} <= now()`));
   if (q) conds.push(ilike(offers.title, like(q)));

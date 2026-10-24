@@ -3,6 +3,8 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, offers, platforms } from "@/db/schema";
 import { requirePage } from "@/lib/auth";
+import { getWhatsappSettings } from "@/lib/bot";
+import { waReady } from "@/server/whatsapp";
 import { updateOfferAction } from "@/server/actions/offers";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { OfferForm } from "@/components/admin/OfferForm";
@@ -30,6 +32,7 @@ export default async function EditOffer({ params }: { params: Promise<{ id: stri
         initial={offer}
         siteUrl={process.env.PUBLIC_URL ?? ""}
         defaultHours={Number(process.env.OFFER_DEFAULT_HOURS ?? 72)}
+          whatsappReady={waReady(await getWhatsappSettings())}
       />
     </>
   );

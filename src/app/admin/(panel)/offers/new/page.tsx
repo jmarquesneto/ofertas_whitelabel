@@ -2,6 +2,8 @@ import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, platforms } from "@/db/schema";
 import { requirePage } from "@/lib/auth";
+import { getWhatsappSettings } from "@/lib/bot";
+import { waReady } from "@/server/whatsapp";
 import { createOfferAction } from "@/server/actions/offers";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { OfferForm } from "@/components/admin/OfferForm";
@@ -26,6 +28,7 @@ export default async function NewOffer() {
           categories={cats}
           siteUrl={process.env.PUBLIC_URL ?? ""}
           defaultHours={Number(process.env.OFFER_DEFAULT_HOURS ?? 72)}
+          whatsappReady={waReady(await getWhatsappSettings())}
         />
       )}
     </>

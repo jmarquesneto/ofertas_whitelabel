@@ -1,0 +1,116 @@
+# ------------------------------------------------------------------
+# Evolution API (WhatsApp) — Stack para Portainer (pensado para OMV)
+#
+# Portainer → Stacks → Add stack → Web editor (cole este arquivo)
+#   Em "Environment variables" defina pelo menos:
+#     EVO_PATH=/srv/dev-disk-by-uuid-XXXX/appdata/evolution
+#     EVO_API_KEY=<chave longa e aleatória>      (a vitrine usa essa chave)
+#     EVO_DB_PASSWORD=<senha do banco>
+#   Opcionais: EVO_PORT (padrão 8085), EVO_SERVER_URL, TZ
+#
+# Dados em CAMINHOS ABSOLUTOS (bind mounts):
+#   EVO_PATH
+#     ├─ instances/  → sessão do WhatsApp conectado
+#     ├─ postgres/   → banco do Evolution
+#     └─ redis/      → cache
+#
+# Depois de subir: abra http://IP-DO-OMV:8085/manager, entre com a EVO_API_KEY,
+# crie uma instância (ex.: "ofertas") e leia o QR code com o celular do chip.
+# ------------------------------------------------------------------
+name: evolution
+
+services:
+  api:
+    # Versão fixa: atualize trocando a tag (veja as releases no GitHub do projeto)
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: evolution-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # --- servidor ---
+      SERVER_TYPE: http
+      SERVER_PORT: 8080
+      SERVER_URL: ${EVO_SERVER_URL:-http://localhost:8085}
+      TZ: ${TZ:-America/Bahia}
+      LANGUAGE: pt-BR
+      LOG_LEVEL: ERROR,WARN,INFO
+      TELEMETRY_ENABLED: "false"
+      DEL_INSTANCE: "false"
+
+      # --- segurança: toda chamada precisa do header "apikey" ---
+      AUTHENTICATION_API_KEY: ${EVO_API_KEY:?defina EVO_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "true"
+
+      # --- banco ---
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVO_DB_PASSWORD:?defina EVO_DB_PASSWORD}@postgres:5432/evolution?schema=evolution_api
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      # Só vamos ENVIAR ofertas: não guardar histórico de conversas deixa o banco pequeno
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "false"
+      DATABASE_SAVE_MESSAGE_UPDATE: "false"
+      DATABASE_SAVE_DATA_HISTORIC: "false"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      DATABASE_SAVE_DATA_LABELS: "false"
+
+      # --- cache (Redis) ---
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+
+      # --- QR code ---
+      QRCODE_LIMIT: 30
+      CONFIG_SESSION_PHONE_CLIENT: Vitrine
+      CONFIG_SESSION_PHONE_NAME: Chrome
+    volumes:
+      - ${EVO_PATH:?defina EVO_PATH (caminho absoluto)}/instances:/evolution/instances
+    ports:
+      # Só para abrir o /manager na sua rede e ler o QR code.
+      # Não encaminhe esta porta no roteador: a vitrine fala com o Evolution pela rede interna.
+      - "${EVO_PORT:-8085}:8080"
+    networks: [evolution]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: evolution-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVO_DB_PASSWORD:?defina EVO_DB_PASSWORD}
+      POSTGRES_DB: evolution
+      TZ: ${TZ:-America/Bahia}
+    volumes:
+      - ${EVO_PATH:?defina EVO_PATH (caminho absoluto)}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Sem "ports": não disputa a 5432 com o Postgres da vitrine
+    networks: [evolution]
+
+  redis:
+    image: redis:7-alpine
+    container_name: evolution-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ${EVO_PATH:?defina EVO_PATH (caminho absoluto)}/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [evolution]
+
+networks:
+  # Nome fixo para a stack da vitrine poder se juntar a ela depois (como rede externa)
+  evolution:
+    name: evolution_net

@@ -1,5 +1,8 @@
-import { Copy, Pause, Pencil, Play, RotateCw, Search, Star, Trash2 } from "lucide-react";
+import { Copy, MessageCircle, Pause, Pencil, Play, RotateCw, Search, Star, Trash2 } from "lucide-react";
 import { requirePage } from "@/lib/auth";
+import { getWhatsappSettings } from "@/lib/bot";
+import { waReady } from "@/server/whatsapp";
+import { resendAction } from "@/server/actions/whatsapp";
 import { listAdminOffers } from "@/server/queries";
 import {
   deleteOfferAction, duplicateOfferAction, renewOfferAction, toggleFeaturedAction, toggleOfferAction,
@@ -24,6 +27,7 @@ export default async function OffersPage({
   const sp = await searchParams;
   const filter = (TABS.find((t) => t.key === sp.f)?.key ?? "live") as "live" | "expired" | "all";
   const rows = await listAdminOffers(filter, sp.q);
+  const wa = waReady(await getWhatsappSettings());
   const now = new Date();
 
   return (
@@ -115,6 +119,11 @@ export default async function OffersPage({
                         <IconAction action={toggleOfferAction.bind(null, o.id)} label="Pausar"><Pause className="h-4 w-4" /></IconAction>
                       ) : (
                         <IconAction action={toggleOfferAction.bind(null, o.id)} label="Publicar"><Play className="h-4 w-4" /></IconAction>
+                      )}
+                      {wa && o.isActive && !expired && (
+                        <IconAction action={resendAction.bind(null, o.id)} label="Enviar ao grupo do WhatsApp" confirmText="Enviar esta oferta ao grupo do WhatsApp?">
+                          <MessageCircle className="h-4 w-4" />
+                        </IconAction>
                       )}
                       <IconAction action={duplicateOfferAction.bind(null, o.id)} label="Duplicar"><Copy className="h-4 w-4" /></IconAction>
                       <a href={`/admin/offers/${o.id}`} title="Editar" aria-label="Editar" className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted transition hover:bg-surface-sunken hover:text-ink">

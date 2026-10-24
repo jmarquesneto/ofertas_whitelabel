@@ -10,9 +10,12 @@ export const roleLabel = (r: string) => ROLES.find((x) => x.key === r)?.label ??
 export const PAGES = [
   { key: "analytics", label: "Analytics", href: "/admin" },
   { key: "offers", label: "Ofertas", href: "/admin/offers" },
+  { key: "approval", label: "Aprovação", href: "/admin/aprovacao" },
   { key: "banners", label: "Banners", href: "/admin/banners" },
   { key: "categories", label: "Categorias", href: "/admin/categories" },
   { key: "platforms", label: "Plataformas", href: "/admin/platforms" },
+  { key: "bot", label: "Robô", href: "/admin/robo" },
+  { key: "whatsapp", label: "WhatsApp", href: "/admin/whatsapp" },
   { key: "settings", label: "Aparência", href: "/admin/settings" },
   { key: "users", label: "Usuários", href: "/admin/users" },
 ] as const;

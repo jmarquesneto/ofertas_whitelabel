@@ -8,7 +8,12 @@
 # Dados em CAMINHOS ABSOLUTOS (bind mounts), definidos por variável:
 #   APPDATA_PATH=/srv/dev-disk-by-uuid-XXXX/appdata/vitrine
 #     ├─ postgres/   → banco de dados
-#     └─ uploads/    → logos, favicons e imagens das ofertas
+#     ├─ uploads/    → logos, favicons e imagens das ofertas
+#     └─ coletor/    → sessão do Mercado Livre (Chrome) do robô
+#
+# WhatsApp: o app entra na rede da stack do Evolution (evolution_net) para
+# falar com ele por http://evolution-api:8080. Sem Evolution? Crie a rede uma
+# vez no OMV:  docker network create evolution_net
 # ------------------------------------------------------------------
 name: vitrine
 
@@ -30,6 +35,12 @@ services:
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
       OFFER_DEFAULT_HOURS: ${OFFER_DEFAULT_HOURS:-72}
       UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-8}
+      # Robô: chave compartilhada com o coletor e porta do noVNC (login do ML)
+      BOT_TOKEN: ${BOT_TOKEN:?defina BOT_TOKEN com 32+ caracteres}
+      COLLECTOR_URL: http://coletor:8000
+      NOVNC_PORT: ${NOVNC_PORT:-6080}
+      # Endereço do noVNC na sua rede (o painel pelo domínio não alcança a porta 6080)
+      NOVNC_URL: ${NOVNC_URL:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       TZ: ${TZ:-America/Bahia}
       # Usuário/grupo que será dono da pasta uploads (no OMV: id SEU_USUARIO).
@@ -41,6 +52,29 @@ services:
     ports:
       # Porta do HOST:porta interna. Se a porta estiver ocupada, mude só APP_PORT.
       - "${APP_PORT:-3080}:3000"
+    networks: [internal, evolution]
+
+  # Robô de ofertas: busca no Mercado Livre, Amazon e Shopee e entrega à vitrine.
+  # Toda a configuração fica no painel (menu Robô).
+  coletor:
+    image: ghcr.io/jmarquesneto/ofertas_whitelabel-coletor:${IMAGE_TAG:-latest}
+    container_name: vitrine-coletor
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      VITRINE_URL: http://app:3000
+      BOT_TOKEN: ${BOT_TOKEN:?defina BOT_TOKEN com 32+ caracteres}
+      TZ: ${TZ:-America/Bahia}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-100}
+    volumes:
+      - ${APPDATA_PATH:?defina APPDATA_PATH (caminho absoluto)}/coletor:/data
+    ports:
+      # noVNC: só é usado na hora de fazer o login do Mercado Livre pelo painel.
+      # Não encaminhe esta porta no roteador.
+      - "${NOVNC_PORT:-6080}:6080"
+    # O Chrome precisa de memória compartilhada maior que o padrão de 64 MB
+    shm_size: 512mb
     networks: [internal]
 
   db:
@@ -65,3 +99,7 @@ services:
 networks:
   internal:
     name: vitrine_internal
+  # Rede criada pela stack do Evolution API
+  evolution:
+    name: ${EVOLUTION_NETWORK:-evolution_net}
+    external: true

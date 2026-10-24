@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, MessageCircle, Star } from "lucide-react";
 import { discountPct, fmtBRL, type ActionState } from "@/lib/utils";
 import { FormMessage, SubmitButton } from "./ui";
 import { ImageInput } from "./ImageInput";
@@ -26,7 +26,7 @@ type Initial = {
 type Cat = { id: number; name: string; parentId: number | null };
 
 export function OfferForm({
-  action, platforms, categories, initial, siteUrl, defaultHours,
+  action, platforms, categories, initial, siteUrl, defaultHours, whatsappReady = false,
 }: {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
   platforms: { id: number; name: string }[];
@@ -34,6 +34,7 @@ export function OfferForm({
   initial?: Initial;
   siteUrl: string;
   defaultHours: number;
+  whatsappReady?: boolean;
 }) {
   const [state, formAction] = useActionState(action, {});
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -162,6 +163,16 @@ export function OfferForm({
               Publicada
             </label>
           </div>
+          {whatsappReady ? (
+            <label className="flex items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm font-semibold">
+              <input type="checkbox" name="sendWhatsapp" defaultChecked={!isEdit} className="h-4 w-4 accent-[rgb(var(--c-secondary))]" />
+              <MessageCircle className="h-4 w-4 text-emerald-600" />
+              {isEdit ? "Enviar de novo ao grupo do WhatsApp" : "Enviar ao grupo do WhatsApp"}
+              <span className="font-normal text-ink-faint">· entra na fila e respeita o intervalo entre mensagens</span>
+            </label>
+          ) : (
+            <p className="hint">Ligue o WhatsApp no menu WhatsApp para enviar as ofertas ao grupo.</p>
+          )}
         </fieldset>
 
         <div className="flex gap-2">

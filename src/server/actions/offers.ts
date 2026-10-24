@@ -15,6 +15,7 @@ import { requirePage } from "@/lib/auth";
 import { RESERVED_SLUGS, slugify, uniqueOfferSlug } from "@/lib/slug";
 import { copyUpload, removeUpload, saveUpload, UploadError } from "@/lib/uploads";
 import type { ActionState } from "@/lib/utils";
+import { enqueueWhatsapp } from "@/server/whatsapp";
 
 const DEFAULT_HOURS = Number(process.env.OFFER_DEFAULT_HOURS ?? 72);
 
@@ -99,7 +100,7 @@ export async function createOfferAction(_: ActionState, form: FormData): Promise
   try {
     const uploaded = await saveUpload(form.get("image"), "offers");
     const hours = typeof d.hours === "number" ? d.hours : DEFAULT_HOURS;
-    await db.insert(offers).values({
+    const [row] = await db.insert(offers).values({
       platformId: d.platformId,
       categoryId: d.categoryId,
       price: d.price,
@@ -114,7 +115,8 @@ export async function createOfferAction(_: ActionState, form: FormData): Promise
       isActive: d.isActive,
       expiresAt: new Date(Date.now() + hours * 3_600_000),
       createdBy: user.id,
-    });
+    }).returning({ id: offers.id });
+    if (d.isActive && form.get("sendWhatsapp") === "on") await enqueueWhatsapp(row.id);
   } catch (e) {
     if (e instanceof UploadError) return { error: e.message };
     throw e;
@@ -155,20 +157,22 @@ export async function updateOfferAction(id: number, _: ActionState, form: FormDa
         coupon: d.coupon,
         imagePath,
         slug,
-        isActive: d.isActive,
+        // Na esteira de aprovação continua pausada: quem publica é o botão "Aprovar"
+        isActive: current.reviewStatus === "pending" ? false : d.isActive,
         // "Renovar por X horas": conta a partir de agora. Em branco = mantém a validade.
         ...(typeof d.hours === "number" ? { expiresAt: new Date(Date.now() + d.hours * 3_600_000) } : {}),
         updatedAt: sql`now()`,
       })
       .where(eq(offers.id, id));
 
+    if (d.isActive && !current.reviewStatus && form.get("sendWhatsapp") === "on") await enqueueWhatsapp(id);
     if (imagePath !== current.imagePath) await removeUpload(current.imagePath);
   } catch (e) {
     if (e instanceof UploadError) return { error: e.message };
     throw e;
   }
   revalidatePath("/");
-  redirect("/admin/offers?updated=1");
+  redirect(current.reviewStatus === "pending" ? "/admin/aprovacao" : "/admin/offers?updated=1");
 }
 
 export async function deleteOfferAction(id: number) {

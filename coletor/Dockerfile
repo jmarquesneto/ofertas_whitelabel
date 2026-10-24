@@ -9,7 +9,9 @@ ENV PYTHONUNBUFFERED=1 \
     HOME=/data/home \
     TZ=America/Bahia
 
-# Chrome real (o ML recusa o "Chrome for Testing"), tela virtual + VNC + noVNC, fontes com emoji
+# Chrome real (o ML recusa o "Chrome for Testing"), tela virtual + VNC + noVNC, fontes com emoji.
+# Não remova o wget depois: o pacote do Google Chrome depende dele (apagar um apaga o outro).
+# O build falha se o Chrome ou as ferramentas do login não estiverem na imagem.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates wget gnupg tzdata gosu \
       xvfb x11vnc novnc websockify fonts-liberation fonts-noto-color-emoji \
@@ -18,8 +20,9 @@ RUN apt-get update \
       > /etc/apt/sources.list.d/google-chrome.list \
  && apt-get update \
  && apt-get install -y --no-install-recommends google-chrome-stable \
- && apt-get purge -y wget gnupg && apt-get autoremove -y \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && google-chrome --version \
+ && for b in Xvfb x11vnc websockify; do command -v $b >/dev/null || { echo "falta $b"; exit 1; }; done
 
 WORKDIR /app
 COPY requirements.txt .

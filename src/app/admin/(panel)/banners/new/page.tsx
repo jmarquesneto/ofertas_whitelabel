@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { createBannerAction } from "@/server/actions/banners";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -7,7 +7,7 @@ import { BannerForm } from "@/components/admin/BannerForm";
 export const metadata = { title: "Novo banner" };
 
 export default async function NewBanner() {
-  await requireAdmin();
+  await requirePage("banners");
   const s = await getSettings();
   return (
     <>

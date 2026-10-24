@@ -1,5 +1,5 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { loginAction, registerAction, verifyTotpAction } from "@/server/actions/auth";
 import { FormMessage, SubmitButton } from "./ui";
 
@@ -48,20 +48,35 @@ export function RegisterForm() {
   );
 }
 
-export function TotpForm({ cta }: { cta: string }) {
+export function TotpForm({ cta, allowBackup = false }: { cta: string; allowBackup?: boolean }) {
   const [state, action] = useActionState(verifyTotpAction, {});
+  const [backup, setBackup] = useState(false);
   return (
     <form action={action} className="grid gap-4">
       <FormMessage state={state} />
-      <div className="field">
-        <label className="label" htmlFor="code">Código de 6 dígitos</label>
-        <input
-          className="input text-center font-mono text-2xl tracking-[0.5em]"
-          id="code" name="code" inputMode="numeric" pattern="[0-9 ]{6,7}" maxLength={7}
-          autoComplete="one-time-code" autoFocus required placeholder="000000"
-        />
-      </div>
+      {backup ? (
+        <div className="field">
+          <label className="label" htmlFor="code">Código de recuperação</label>
+          <input key="backup" className="input text-center font-mono text-xl uppercase tracking-[0.2em]" id="code" name="code"
+            maxLength={9} autoComplete="off" autoFocus required placeholder="XXXX-XXXX" />
+          <span className="hint">Um dos 10 códigos que você guardou. Cada código funciona uma única vez.</span>
+        </div>
+      ) : (
+        <div className="field">
+          <label className="label" htmlFor="code">Código de 6 dígitos</label>
+          <input key="totp"
+            className="input text-center font-mono text-2xl tracking-[0.5em]"
+            id="code" name="code" inputMode="numeric" pattern="[0-9 ]{6,7}" maxLength={7}
+            autoComplete="one-time-code" autoFocus required placeholder="000000"
+          />
+        </div>
+      )}
       <SubmitButton className="btn-primary w-full py-3" pendingText="Verificando…">{cta}</SubmitButton>
+      {allowBackup && (
+        <button type="button" onClick={() => setBackup((b) => !b)} className="text-center text-sm font-semibold text-ink-muted underline hover:text-ink">
+          {backup ? "Voltar para o código do aplicativo" : "Perdi o celular: usar código de recuperação"}
+        </button>
+      )}
     </form>
   );
 }

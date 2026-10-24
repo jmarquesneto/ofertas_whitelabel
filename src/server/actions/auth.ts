@@ -8,7 +8,7 @@
  */
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { eq, sql } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
 import { registrationOpen } from "@/server/auth-helpers";
+import { consumeBackupCode, looksLikeBackupCode } from "@/server/backup-codes";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/request";
 import {
@@ -48,9 +49,11 @@ export async function registerAction(_: ActionState, form: FormData): Promise<Ac
   const exists = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
   if (exists.length) return { error: "Já existe uma conta com este e-mail" };
 
+  // O primeiro usuário do sistema é administrador; cadastros abertos depois entram como postador
+  const [{ n }] = await db.select({ n: count() }).from(users);
   const [u] = await db
     .insert(users)
-    .values({ name, email, passwordHash: await bcrypt.hash(password, 12) })
+    .values({ name, email, passwordHash: await bcrypt.hash(password, 12), role: n === 0 ? "admin" : "poster" })
     .returning({ id: users.id });
 
   const jar = await cookies();
@@ -75,6 +78,7 @@ export async function loginAction(_: ActionState, form: FormData): Promise<Actio
   const [u] = await db.select().from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
   const ok = await bcrypt.compare(password, u?.passwordHash ?? dummyHash());
   if (!u || !ok) return { error: "E-mail ou senha incorretos" };
+  if (u.isBlocked) return { error: "Esta conta está bloqueada. Fale com um administrador." };
 
   const stage = u.totpEnabled ? "totp" : "setup"; // sem 2FA configurado = obrigado a configurar
   const jar = await cookies();
@@ -87,15 +91,23 @@ export async function verifyTotpAction(_: ActionState, form: FormData): Promise<
   const pre = await verifyToken<PreClaims>(jar.get(PRE_COOKIE)?.value);
   if (!pre) redirect("/admin/login");
 
-  const code = String(form.get("code") ?? "").replace(/\D/g, "");
-  if (code.length !== 6) return { error: "Digite os 6 dígitos do aplicativo" };
+  const input = String(form.get("code") ?? "").trim();
   if (!rateLimit(`totp:${pre.sub}`, 6, 5 * 60_000)) return { error: "Muitas tentativas. Aguarde 5 minutos." };
 
   const [u] = await db.select().from(users).where(eq(users.id, Number(pre.sub))).limit(1);
-  if (!u?.totpSecretEnc) redirect("/admin/login");
+  if (!u?.totpSecretEnc || u.isBlocked) redirect("/admin/login");
 
-  if (!authenticator.verify({ token: code, secret: decrypt(u.totpSecretEnc) }))
-    return { error: "Código inválido ou expirado" };
+  let usedBackup = false;
+  if (pre.stage === "totp" && looksLikeBackupCode(input)) {
+    // Celular perdido: código de recuperação (vale uma única vez)
+    if (!(await consumeBackupCode(u.id, input))) return { error: "Código de recuperação inválido ou já usado" };
+    usedBackup = true;
+  } else {
+    const code = input.replace(/\D/g, "");
+    if (code.length !== 6) return { error: "Digite os 6 dígitos do aplicativo" };
+    if (!authenticator.verify({ token: code, secret: decrypt(u.totpSecretEnc) }))
+      return { error: "Código inválido ou expirado" };
+  }
 
   await db
     .update(users)
@@ -108,6 +120,9 @@ export async function verifyTotpAction(_: ActionState, form: FormData): Promise<
     await signToken({ sub: String(u.id), v: u.sessionVersion, stage: "full" }, SESSION_TTL_S),
     cookieOpts(SESSION_TTL_S),
   );
+  if (u.mustChangePassword) redirect("/admin/perfil?trocar-senha=1");
+  if (pre.stage === "setup") redirect("/admin/perfil?2fa-ativado=1#recuperacao");
+  if (usedBackup) redirect("/admin/perfil?usou-codigo=1#recuperacao");
   redirect("/admin");
 }
 

@@ -9,7 +9,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { HEX_RE } from "@/lib/color";
 import { getSettings } from "@/lib/settings";
 import { removeUpload, removeUploadIfUnused, saveUpload, UploadError } from "@/lib/uploads";
@@ -30,7 +30,7 @@ const schema = z.object({
 });
 
 export async function updateSettingsAction(_: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("settings");
 
   const parsed = schema.safeParse({
     siteName: form.get("siteName"),

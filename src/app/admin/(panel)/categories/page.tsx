@@ -1,5 +1,5 @@
 import { CornerDownRight, Pencil, Trash2 } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { listAllCategories } from "@/server/queries";
 import { deleteCategoryAction } from "@/server/actions/categories";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -11,7 +11,7 @@ export const metadata = { title: "Categorias" };
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesAdmin() {
-  await requireAdmin();
+  await requirePage("categories");
   const all = await listAllCategories();
   const roots = all.filter((c) => !c.parentId);
 

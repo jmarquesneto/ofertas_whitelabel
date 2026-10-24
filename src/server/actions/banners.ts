@@ -6,7 +6,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { banners, siteSettings } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { HEX_RE } from "@/lib/color";
 import { removeUploadIfUnused, saveUpload, UploadError, copyUpload } from "@/lib/uploads";
 import type { ActionState } from "@/lib/utils";
@@ -76,7 +76,7 @@ function done() {
 }
 
 export async function createBannerAction(_: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("banners");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
   try {
@@ -94,7 +94,7 @@ export async function createBannerAction(_: ActionState, form: FormData): Promis
 }
 
 export async function updateBannerAction(id: number, _: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("banners");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
   const [cur] = await db.select().from(banners).where(eq(banners.id, id)).limit(1);
@@ -117,7 +117,7 @@ export async function updateBannerAction(id: number, _: ActionState, form: FormD
 }
 
 export async function deleteBannerAction(id: number) {
-  await requireAdmin();
+  await requirePage("banners");
   const [gone] = await db.delete(banners).where(eq(banners.id, id)).returning();
   await removeUploadIfUnused(gone?.imagePath);
   await removeUploadIfUnused(gone?.mobileImagePath);
@@ -125,14 +125,14 @@ export async function deleteBannerAction(id: number) {
 }
 
 export async function toggleBannerAction(id: number) {
-  await requireAdmin();
+  await requirePage("banners");
   await db.update(banners).set({ isActive: sql`not ${banners.isActive}`, updatedAt: sql`now()` }).where(eq(banners.id, id));
   done();
 }
 
 /** Sobe/desce uma posição e renumera tudo (1, 2, 3…) */
 export async function moveBannerAction(id: number, dir: "up" | "down") {
-  await requireAdmin();
+  await requirePage("banners");
   const list = await db.select({ id: banners.id }).from(banners).orderBy(asc(banners.sortOrder), asc(banners.id));
   const i = list.findIndex((b) => b.id === id);
   const j = dir === "up" ? i - 1 : i + 1;
@@ -145,7 +145,7 @@ export async function moveBannerAction(id: number, dir: "up" | "down") {
 }
 
 export async function duplicateBannerAction(id: number) {
-  await requireAdmin();
+  await requirePage("banners");
   const [b] = await db.select().from(banners).where(eq(banners.id, id)).limit(1);
   if (!b) return;
   const [{ max }] = await db.select({ max: sql<number>`coalesce(max(${banners.sortOrder}), 0)`.mapWith(Number) }).from(banners);
@@ -161,7 +161,7 @@ export async function duplicateBannerAction(id: number) {
 }
 
 export async function setBannerIntervalAction(_: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("banners");
   const n = Number(form.get("interval"));
   if (!Number.isInteger(n) || n < 3 || n > 30) return { error: "Use de 3 a 30 segundos" };
   await db.update(siteSettings).set({ bannerIntervalSec: n, updatedAt: sql`now()` }).where(eq(siteSettings.id, 1));

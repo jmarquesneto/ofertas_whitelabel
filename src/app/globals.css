@@ -26,7 +26,7 @@ body { @apply bg-surface text-ink font-sans antialiased; }
   .btn-outline { @apply btn border-2 border-secondary bg-transparent text-secondary hover:bg-secondary hover:text-secondary-fg focus-visible:outline-secondary; }
   .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50 focus-visible:outline-red-600; }
 
-  .field { @apply grid gap-1.5; }
+  .field { @apply grid content-start gap-1.5; }
   .label { @apply text-sm font-medium text-ink; }
   .hint { @apply text-xs text-ink-muted; }
   .input {

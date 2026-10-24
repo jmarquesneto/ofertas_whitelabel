@@ -1,5 +1,5 @@
 import { Copy, Pause, Pencil, Play, RotateCw, Search, Star, Trash2 } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { listAdminOffers } from "@/server/queries";
 import {
   deleteOfferAction, duplicateOfferAction, renewOfferAction, toggleFeaturedAction, toggleOfferAction,
@@ -20,7 +20,7 @@ const TABS = [
 export default async function OffersPage({
   searchParams,
 }: { searchParams: Promise<{ f?: string; q?: string; created?: string; updated?: string }> }) {
-  await requireAdmin();
+  await requirePage("offers");
   const sp = await searchParams;
   const filter = (TABS.find((t) => t.key === sp.f)?.key ?? "live") as "live" | "expired" | "all";
   const rows = await listAdminOffers(filter, sp.q);

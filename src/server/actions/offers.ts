@@ -11,7 +11,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { offers, platforms } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { RESERVED_SLUGS, slugify, uniqueOfferSlug } from "@/lib/slug";
 import { copyUpload, removeUpload, saveUpload, UploadError } from "@/lib/uploads";
 import type { ActionState } from "@/lib/utils";
@@ -90,7 +90,7 @@ async function platformExists(id: number) {
 }
 
 export async function createOfferAction(_: ActionState, form: FormData): Promise<ActionState> {
-  const user = await requireAdmin();
+  const user = await requirePage("offers");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
   const d = p.data;
@@ -124,7 +124,7 @@ export async function createOfferAction(_: ActionState, form: FormData): Promise
 }
 
 export async function updateOfferAction(id: number, _: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("offers");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
   const d = p.data;
@@ -172,7 +172,7 @@ export async function updateOfferAction(id: number, _: ActionState, form: FormDa
 }
 
 export async function deleteOfferAction(id: number) {
-  await requireAdmin();
+  await requirePage("offers");
   const [gone] = await db.delete(offers).where(eq(offers.id, id)).returning();
   await removeUpload(gone?.imagePath);
   revalidatePath("/");
@@ -181,7 +181,7 @@ export async function deleteOfferAction(id: number) {
 
 /** Ação rápida da listagem: renova por mais N horas (padrão 72h) e reativa */
 export async function renewOfferAction(id: number) {
-  await requireAdmin();
+  await requirePage("offers");
   await db
     .update(offers)
     .set({ expiresAt: new Date(Date.now() + DEFAULT_HOURS * 3_600_000), isActive: true, updatedAt: sql`now()` })
@@ -191,7 +191,7 @@ export async function renewOfferAction(id: number) {
 }
 
 export async function toggleOfferAction(id: number) {
-  await requireAdmin();
+  await requirePage("offers");
   await db.update(offers).set({ isActive: sql`not ${offers.isActive}`, updatedAt: sql`now()` }).where(eq(offers.id, id));
   revalidatePath("/");
   revalidatePath("/admin/offers");
@@ -199,7 +199,7 @@ export async function toggleOfferAction(id: number) {
 
 /** Estrela da listagem: liga/desliga "destaque na home" */
 export async function toggleFeaturedAction(id: number) {
-  await requireAdmin();
+  await requirePage("offers");
   await db.update(offers).set({ isFeatured: sql`not ${offers.isFeatured}`, updatedAt: sql`now()` }).where(eq(offers.id, id));
   revalidatePath("/");
   revalidatePath("/admin/offers");
@@ -207,7 +207,7 @@ export async function toggleFeaturedAction(id: number) {
 
 /** Duplicar: cria uma cópia pausada para editar (ex.: mesma oferta em outra loja) */
 export async function duplicateOfferAction(id: number) {
-  const user = await requireAdmin();
+  const user = await requirePage("offers");
   const [o] = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
   if (!o) return;
   const [copy] = await db

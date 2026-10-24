@@ -6,7 +6,7 @@ import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { offers, platforms } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { uniquePlatformSlug } from "@/lib/slug";
 import { removeUpload, saveUpload, UploadError } from "@/lib/uploads";
 import type { ActionState } from "@/lib/utils";
@@ -26,7 +26,7 @@ function parse(form: FormData) {
 }
 
 export async function createPlatformAction(_: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("platforms");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
   try {
@@ -41,7 +41,7 @@ export async function createPlatformAction(_: ActionState, form: FormData): Prom
 }
 
 export async function updatePlatformAction(id: number, _: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("platforms");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
 
@@ -67,7 +67,7 @@ export async function updatePlatformAction(id: number, _: ActionState, form: For
 }
 
 export async function deletePlatformAction(id: number): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("platforms");
   const [{ n }] = await db.select({ n: count() }).from(offers).where(eq(offers.platformId, id));
   if (n > 0) return { error: `Existem ${n} oferta(s) nesta plataforma. Exclua-as ou desative a plataforma.` };
   const [gone] = await db.delete(platforms).where(eq(platforms.id, id)).returning();

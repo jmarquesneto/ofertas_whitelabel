@@ -1,16 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * O controle de acesso do painel é feito no servidor por requireAdmin()
- * (layout do painel, cada página e cada Server Action) e na página de 2FA.
- * Lá o redirect para /admin/login é relativo, então funciona atrás de qualquer
- * IP, porta ou domínio — algo que o middleware não garante, porque o servidor
- * interno do Next troca o Host antes de chegar aqui.
+ * O controle de acesso do painel é feito no servidor por requireUser()/requirePage()
+ * (layout, cada página e cada Server Action) e na página de 2FA. O redirect para
+ * /admin/login é relativo, então funciona atrás de qualquer IP, porta ou domínio.
  *
- * O middleware só marca o painel como não indexável.
+ * Aqui só: repassar o caminho atual para o layout (menu ativo / troca de senha
+ * obrigatória) e marcar o painel como não indexável.
  */
-export function middleware(_req: NextRequest) {
-  const res = NextResponse.next();
+export function middleware(req: NextRequest) {
+  const headers = new Headers(req.headers);
+  headers.set("x-pathname", req.nextUrl.pathname);
+  const res = NextResponse.next({ request: { headers } });
   res.headers.set("X-Robots-Tag", "noindex, nofollow");
   return res;
 }

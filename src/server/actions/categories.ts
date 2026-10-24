@@ -6,7 +6,7 @@ import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { categories, offers } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { uniqueCategorySlug } from "@/lib/slug";
 import { ICONS } from "@/components/Icon";
 import type { ActionState } from "@/lib/utils";
@@ -43,7 +43,7 @@ async function validParent(parentId: number | null, selfId?: number) {
 }
 
 export async function createCategoryAction(_: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("categories");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
   const err = await validParent(p.data.parentId);
@@ -54,7 +54,7 @@ export async function createCategoryAction(_: ActionState, form: FormData): Prom
 }
 
 export async function updateCategoryAction(id: number, _: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  await requirePage("categories");
   const p = parse(form);
   if (!p.success) return { error: p.error.issues[0].message };
   const [current] = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
@@ -71,7 +71,7 @@ export async function updateCategoryAction(id: number, _: ActionState, form: For
 
 /** Excluir: ofertas ficam "sem categoria"; subcategorias são excluídas junto */
 export async function deleteCategoryAction(id: number) {
-  await requireAdmin();
+  await requirePage("categories");
   const subs = await db.select({ id: categories.id }).from(categories).where(eq(categories.parentId, id));
   for (const s of [...subs.map((x) => x.id), id]) {
     await db.update(offers).set({ categoryId: null }).where(and(eq(offers.categoryId, s)));

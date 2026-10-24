@@ -15,7 +15,7 @@ export default async function TwoFactorPage() {
   if (pre.stage === "totp")
     return (
       <AuthShell title="Verificação em duas etapas" subtitle="Abra o Google Authenticator e digite o código atual.">
-        <TotpForm cta="Entrar" />
+        <TotpForm cta="Entrar" allowBackup />
       </AuthShell>
     );
 

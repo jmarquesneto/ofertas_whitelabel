@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { updateCategoryAction } from "@/server/actions/categories";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { CategoryForm } from "@/components/admin/CategoryForm";
@@ -10,7 +10,7 @@ import { CategoryForm } from "@/components/admin/CategoryForm";
 export const metadata = { title: "Editar categoria" };
 
 export default async function EditCategory({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  await requirePage("categories");
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
   const [[c], roots] = await Promise.all([

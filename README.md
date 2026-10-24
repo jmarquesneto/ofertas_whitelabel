@@ -159,6 +159,9 @@ sequenceDiagram
 * Segredo do autenticador **cifrado com AES-256-GCM** no banco.
 * **Rate limit** em login e 2FA, senhas com bcrypt, cookies `httpOnly` + `SameSite`.
 * **Cadastro fecha sozinho** depois do primeiro administrador.
+* **Códigos de recuperação**: 10 códigos de uso único (guardados só como hash) para entrar se perder o celular.
+* **Usuários e grupos**: Administrador, Moderador e Postador, com uma **matriz de permissões** onde o administrador marca quais páginas cada grupo vê. Criar, trocar grupo, resetar senha (temporária, com troca obrigatória), resetar 2FA e bloquear.
+* **Meu perfil**: nome, e-mail, senha, códigos de recuperação, reconfigurar o Authenticator e sair dos outros dispositivos.
 * Uploads validados pela **assinatura binária** do arquivo (não pelo nome), com SVG servido em *sandbox*.
 
 ### 5. 📊 Painel e analytics
@@ -275,7 +278,9 @@ Ou copie a pasta `APPDATA_PATH` inteira com a stack parada.
 
 | Tabela | Campos principais |
 | :--- | :--- |
-| `users` | e-mail único, hash bcrypt, segredo TOTP cifrado, 2FA ativo, versão de sessão |
+| `users` | e-mail único, hash bcrypt, grupo, bloqueado, troca de senha pendente, segredo TOTP cifrado, 2FA ativo, versão de sessão |
+| `backup_codes` | usuário, hash HMAC do código de recuperação, usado em |
+| `role_permissions` | grupo × página liberada (administrador vê tudo) |
 | `site_settings` | linha única: nome, slogan, logo, favicon, cores hex (validadas no banco), hero, selos, faixa de afiliados, rodapé |
 | `platforms` | nome, slug, logo, ativa, ordem |
 | `banners` | tipo (texto/imagem), título, destaque, subtítulo, botão e link, imagens computador/celular, cor de fundo, ordem, ativo, início/fim |
@@ -303,7 +308,7 @@ npm run db:generate         # gera nova migração após alterar src/db/schema.t
 
 - [x] Categorias, preço "de/por", página da oferta e favoritos
 - [x] Carrossel de banners com agendamento
-- [ ] Gestão de usuários no painel (convidar admin, resetar 2FA, sair de todos os dispositivos)
+- [x] Usuários, grupos com permissões por página, Meu perfil e códigos de recuperação do 2FA
 - [ ] Importar oferta a partir do link (título e imagem automáticos)
 - [ ] Postagem automática no Telegram/WhatsApp
 - [ ] Rate limit em Redis para múltiplas réplicas

@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, Copy, Image as ImageIcon, Pause, Pencil, Play, Trash2, Type } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { listAllBanners } from "@/server/queries";
 import { deleteBannerAction, duplicateBannerAction, moveBannerAction, toggleBannerAction } from "@/server/actions/banners";
@@ -20,7 +20,7 @@ function status(b: Banner, now: Date) {
 }
 
 export default async function BannersPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
-  await requireAdmin();
+  await requirePage("banners");
   const [list, settings, sp] = await Promise.all([listAllBanners(), getSettings(), searchParams]);
   const now = new Date();
   const live = list.filter((b) => status(b, now).label.startsWith("No ar")).length;

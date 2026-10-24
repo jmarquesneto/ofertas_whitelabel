@@ -1,7 +1,7 @@
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, platforms } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { createOfferAction } from "@/server/actions/offers";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { OfferForm } from "@/components/admin/OfferForm";
@@ -9,7 +9,7 @@ import { OfferForm } from "@/components/admin/OfferForm";
 export const metadata = { title: "Nova oferta" };
 
 export default async function NewOffer() {
-  await requireAdmin();
+  await requirePage("offers");
   const [list, cats] = await Promise.all([
     db.select({ id: platforms.id, name: platforms.name }).from(platforms).orderBy(asc(platforms.sortOrder), asc(platforms.name)),
     db.select({ id: categories.id, name: categories.name, parentId: categories.parentId }).from(categories).orderBy(asc(categories.sortOrder), asc(categories.name)),

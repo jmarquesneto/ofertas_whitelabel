@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { listAllPlatforms } from "@/server/queries";
 import { deletePlatformAction } from "@/server/actions/platforms";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -8,7 +8,7 @@ import { DeletePlatformButton } from "@/components/admin/DeletePlatformButton";
 export const metadata = { title: "Plataformas" };
 
 export default async function PlatformsPage() {
-  await requireAdmin();
+  await requirePage("platforms");
   const rows = await listAllPlatforms();
   return (
     <>

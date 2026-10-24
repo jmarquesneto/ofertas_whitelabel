@@ -12,6 +12,7 @@ import {
   check,
   numeric,
   jsonb,
+  primaryKey,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
@@ -29,12 +30,43 @@ export const users = pgTable(
     // Segredo TOTP cifrado com AES-256-GCM (APP_SECRET). Nunca em texto puro.
     totpSecretEnc: text("totp_secret_enc"),
     totpEnabled: boolean("totp_enabled").notNull().default(false),
+    // Grupo: admin | moderator | poster (permissões por página em role_permissions)
+    role: varchar("role", { length: 20 }).notNull().default("poster"),
+    isBlocked: boolean("is_blocked").notNull().default(false),
+    // Depois de um reset feito pelo administrador, obriga a criar nova senha
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
     // Incrementar invalida todas as sessões ativas do usuário
     sessionVersion: integer("session_version").notNull().default(1),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("users_email_uq").on(sql`lower(${t.email})`)],
+  (t) => [
+    uniqueIndex("users_email_uq").on(sql`lower(${t.email})`),
+    check("users_role", sql`${t.role} in ('admin', 'moderator', 'poster')`),
+  ],
+);
+
+/* Códigos de recuperação do 2FA (guardados só como hash; cada um vale uma vez) */
+export const backupCodes = pgTable(
+  "backup_codes",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    codeHash: varchar("code_hash", { length: 64 }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("backup_codes_user_idx").on(t.userId)],
+);
+
+/* Páginas que cada grupo pode ver (linha existe = permitido). Admin vê tudo. */
+export const rolePermissions = pgTable(
+  "role_permissions",
+  {
+    role: varchar("role", { length: 20 }).notNull(),
+    page: varchar("page", { length: 30 }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.role, t.page] })],
 );
 
 /* ------------------------------------------------------------------ */

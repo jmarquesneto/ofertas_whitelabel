@@ -1,5 +1,5 @@
 import { Eye, MousePointerClick, Tag, Users } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { requirePage } from "@/lib/auth";
 import { clicksByOffer, dashboardStats } from "@/server/queries";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { fmtInt, timeLeft } from "@/lib/utils";
@@ -8,7 +8,7 @@ export const metadata = { title: "Analytics" };
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
-  await requireAdmin();
+  await requirePage("analytics");
   const [stats, ranking] = await Promise.all([dashboardStats(), clicksByOffer(12)]);
   const max = Math.max(1, ...stats.daily.map((d) => d.n));
   const week = stats.daily.slice(-7).reduce((a, d) => a + d.n, 0);

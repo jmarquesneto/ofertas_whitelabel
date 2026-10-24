@@ -1,7 +1,6 @@
 """Um ciclo: coletar → filtrar → escolher → gerar links → entregar à vitrine."""
 import logging
 import re
-import threading
 import time
 
 from . import vitrine
@@ -11,9 +10,7 @@ from .sources import amazon, mercadolivre, shopee
 
 log = logging.getLogger("ofertas.pipeline")
 
-# Um Chrome por vez no perfil do ML (ciclo, conversor e login dividem o mesmo perfil)
-CHROME_LOCK = threading.Lock()
-CICLO_LOCK = threading.Lock()
+from .travas import CHROME_LOCK, CICLO_LOCK  # noqa: E402  (reexportadas para o servidor)
 
 
 def _st(ok: bool, msg: str) -> dict:

@@ -63,12 +63,55 @@ def _categorias() -> dict[str, str]:
     return dict(cats) if isinstance(cats, dict) else {str(c): str(c) for c in cats}
 
 
+def _titulo_html(html: str) -> str:
+    m = re.search(r"<title[^>]*>(.*?)</title>", html[:20000], re.S | re.I)
+    return re.sub(r"\s+", " ", m.group(1)).strip()[:80] if m else "sem título"
+
+
+def _pagina_pelo_chrome(urls: list[str]) -> list[str]:
+    """Plano B: abre as páginas no Chrome logado (renderiza como um navegador de verdade)."""
+    from playwright.sync_api import sync_playwright
+
+    from ..travas import CHROME_LOCK
+
+    if not CHROME_LOCK.acquire(timeout=60):
+        raise RuntimeError("Chrome ocupado (login do ML aberto?)")
+    htmls: list[str] = []
+    try:
+        with sync_playwright() as pw:
+            ctx = _abrir_contexto(pw, headless=True)
+            try:
+                page = ctx.pages[0] if ctx.pages else ctx.new_page()
+                for url in urls:
+                    page.goto(url, wait_until="domcontentloaded", timeout=45_000)
+                    try:
+                        page.wait_for_selector(".poly-card", timeout=12_000)
+                    except Exception:
+                        pass
+                    page.mouse.wheel(0, 4000)  # força o carregamento preguiçoso das imagens
+                    page.wait_for_timeout(1500)
+                    htmls.append(page.content())
+            finally:
+                ctx.close()
+    finally:
+        CHROME_LOCK.release()
+    return htmls
+
+
 def buscar_ofertas() -> list[Oferta]:
-    """Página de ofertas do ML, filtrada pelas categorias do config (ofertas?category=MLB...)."""
+    """Página de ofertas do ML, filtrada pelas categorias do config (ofertas?category=MLB...).
+
+    Primeiro tenta uma requisição simples; se a página vier sem produtos (bloqueio,
+    página de verificação, layout novo), abre as mesmas páginas no Chrome logado.
+    """
+    from urllib.parse import urlencode
+
     paginas = max(1, int(config.fonte_ml.get("paginas", 1)))
     categorias = _categorias() or {"": "todas"}
     s = sessao()
     ofertas: dict[str, Oferta] = {}
+    vazias: list[tuple[str, str]] = []  # (url, nome) sem produtos na requisição simples
+    diag: list[str] = []
     for cat_id, nome in categorias.items():
         for pagina in range(1, paginas + 1):
             params = {}
@@ -76,14 +119,46 @@ def buscar_ofertas() -> list[Oferta]:
                 params["category"] = cat_id
             if pagina > 1:
                 params["page"] = pagina
-            r = s.get(URL_OFERTAS, params=params or None, timeout=30)
-            r.raise_for_status()
-            achadas = _parse_pagina(r.text)
-            for o in achadas:
-                ofertas.setdefault(o.id_produto, o)
-            log.info("Mercado Livre %s: %d ofertas", nome, len(achadas))
+            url = URL_OFERTAS + (("?" + urlencode(params)) if params else "")
+            try:
+                r = s.get(url, timeout=30)
+                achadas = _parse_pagina(r.text) if r.status_code == 200 else []
+                if not achadas:
+                    diag.append(f"HTTP {r.status_code}, “{_titulo_html(r.text)}”, {r.url[:90]}")
+                    (DATA_DIR / "debug_ml_ofertas.html").write_text(r.text, encoding="utf-8")
+            except Exception as e:
+                achadas = []
+                diag.append(f"erro de rede: {e}"[:150])
+            if achadas:
+                for o in achadas:
+                    ofertas.setdefault(o.id_produto, o)
+                log.info("Mercado Livre %s: %d ofertas", nome, len(achadas))
+            else:
+                vazias.append((url, nome))
             time.sleep(1)
+
+    if vazias:
+        log.warning("Mercado Livre: %d página(s) sem produtos na leitura simples (%s) — tentando pelo Chrome",
+                    len(vazias), diag[0] if diag else "")
+        if tem_sessao():
+            try:
+                for (url, nome), html in zip(vazias, _pagina_pelo_chrome([u for u, _ in vazias])):
+                    achadas = _parse_pagina(html)
+                    for o in achadas:
+                        ofertas.setdefault(o.id_produto, o)
+                    log.info("Mercado Livre %s (Chrome): %d ofertas", nome, len(achadas))
+                    if not achadas:
+                        (DATA_DIR / "debug_ml_ofertas.html").write_text(html, encoding="utf-8")
+                        diag.append(f"pelo Chrome: “{_titulo_html(html)}”")
+            except Exception as e:
+                diag.append(f"pelo Chrome: {e}"[:200])
+        else:
+            diag.append("sem sessão do ML para tentar pelo Chrome")
+
     log.info("Mercado Livre: %d ofertas coletadas", len(ofertas))
+    if not ofertas:
+        raise RuntimeError("A página de ofertas do ML veio sem produtos (" + " · ".join(diag[-2:])[:350] +
+                           "). HTML salvo em debug_ml_ofertas.html na pasta do coletor.")
     return list(ofertas.values())
 
 
@@ -227,7 +302,7 @@ def _parse_card(card) -> Oferta | None:
 
 def _parse_pagina(html: str) -> list[Oferta]:
     soup = BeautifulSoup(html, "lxml")
-    cards = soup.select("div.poly-card")
+    cards = soup.select(".poly-card")
     ofertas = [o for o in (_parse_card(c) for c in cards) if o]
     if cards and not ofertas:
         log.warning("Página de ofertas do ML mudou de layout? %d cards, 0 parseados", len(cards))

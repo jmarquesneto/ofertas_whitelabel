@@ -14,7 +14,7 @@ import threading
 import time
 
 from .config import DATA_DIR
-from .pipeline import CHROME_LOCK
+from .travas import CHROME_LOCK
 from .sources import mercadolivre
 
 log = logging.getLogger("ofertas.ml_login")

@@ -86,7 +86,7 @@ class Handler(BaseHTTPRequestHandler):
         if not n:
             return {}
         try:
-            return json.loads(self.rfile.read(min(n, 100_000)) or b"{}")
+            return json.loads(self.rfile.read(min(n, 500_000)) or b"{}")
         except ValueError:
             return {}
 
@@ -113,6 +113,10 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/ml-login/iniciar":
                 r = ml_login.iniciar()
                 vitrine.enviar_status(mlLoginOpen=True)
+                return self._json(r)
+            if self.path == "/ml-login/cookies":
+                r = ml_login.importar_cookies(str(corpo.get("cookies", "")))
+                vitrine.enviar_status(mlLoginOpen=False, mlSession=r.get("sessao", False))
                 return self._json(r)
             if self.path == "/ml-login/parar":
                 r = ml_login.parar()

@@ -1,11 +1,11 @@
 "use client";
 import { useActionState, useEffect, useState, useTransition } from "react";
-import { CheckCircle2, ExternalLink, FlaskConical, LogIn, Play, ShieldCheck, Zap } from "lucide-react";
+import { CheckCircle2, ClipboardPaste, ExternalLink, FlaskConical, LogIn, Monitor, Play, ShieldCheck, Zap } from "lucide-react";
 import type { BotSources } from "@/db/schema";
 import { NICHES } from "@/lib/niches";
 import { cn, type ActionState } from "@/lib/utils";
 import {
-  mlLoginAction, runCycleAction, saveBotGeneralAction, saveNichesAction, saveSourceAction,
+  mlCookiesAction, mlLoginAction, runCycleAction, saveBotGeneralAction, saveNichesAction, saveSourceAction,
   testSourceAction, toggleSourceAction, type TestResult,
 } from "@/server/actions/bot";
 import { FormMessage, SubmitButton } from "./ui";
@@ -261,6 +261,12 @@ export function MercadoLivreCard({ cfg, status, session, loginOpen, novncUrl, no
   const [base, setBase] = useState(novncUrl);
   useEffect(() => { if (!novncUrl) setBase(`http://${window.location.hostname}:${novncPort}`); }, [novncUrl, novncPort]);
   const vncLink = (pwd?: string) => `${base.replace(/\/$/, "")}/vnc.html?autoconnect=1&resize=scale&password=${encodeURIComponent(pwd ?? "")}`;
+  const [tab, setTab] = useState<"cookies" | "vnc">("cookies");
+  const [cookieState, cookieAction] = useActionState(async (prev: ActionState, f: FormData) => {
+    const r = await mlCookiesAction(prev, f);
+    if (r.session !== undefined) setLogin((l) => ({ ...l, session: r.session }));
+    return r;
+  }, {});
   const open = () => start(async () => {
     const r = await mlLoginAction("iniciar");
     setLogin((l) => ({ ...r, open: !r.error, pwd: r.vncPassword, session: l.session }));
@@ -295,36 +301,74 @@ export function MercadoLivreCard({ cfg, status, session, loginOpen, novncUrl, no
         </div>
         <p className="hint">
           O link de afiliado do ML só sai com a sua conta logada. Faça o login uma vez; quando expirar, o status desta loja avisa e você repete.
-          O Chrome abre em {base || "…"}: precisa estar na mesma rede do servidor.
         </p>
-        {!login.open ? (
-          <button type="button" className="btn-ghost justify-self-start" disabled={pending} onClick={open}>
-            <LogIn className="h-4 w-4" /> {pending ? "Abrindo o Chrome…" : "Fazer login no Mercado Livre"}
-          </button>
+
+        <div className="flex gap-1 rounded-lg bg-surface-sunken p-1 text-sm font-semibold">
+          {([["cookies", ClipboardPaste, "Pelo seu navegador"], ["vnc", Monitor, "Chrome do robô"]] as const).map(([k, I, label]) => (
+            <button key={k} type="button" onClick={() => setTab(k)}
+              className={cn("flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 transition",
+                tab === k ? "bg-surface-raised shadow-sm" : "text-ink-muted hover:text-ink")}>
+              <I className="h-4 w-4" /> {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "cookies" ? (
+          <form action={cookieAction} className="grid gap-3">
+            <ol className="grid list-decimal gap-1.5 pl-5 text-sm">
+              <li>
+                No seu Chrome (computador), instale a extensão{" "}
+                <a className="font-semibold underline" target="_blank" rel="noreferrer"
+                  href="https://chromewebstore.google.com/search/Cookie-Editor">Cookie-Editor</a>.
+              </li>
+              <li>
+                Abra o{" "}
+                <a className="font-semibold underline" target="_blank" rel="noreferrer" href="https://www.mercadolivre.com.br/afiliados/linkbuilder">Linkbuilder</a>{" "}
+                e entre na sua conta.
+              </li>
+              <li>Com a página do Linkbuilder aberta, clique na extensão → <b>Export</b> → <b>JSON</b> (copia os cookies).</li>
+              <li>Cole abaixo e clique em <b>Importar sessão</b>.</li>
+            </ol>
+            <textarea name="cookies" required className="input min-h-[90px] font-mono text-xs" placeholder='[{"domain":".mercadolivre.com.br","name":"ssid", …}]' />
+            <p className="hint">Os cookies dão acesso à sua conta: só cole aqui, no seu painel. Não saia da conta no navegador, senão a sessão do robô cai junto.</p>
+            <div><SubmitButton className="btn-primary" pendingText="Importando e conferindo…">Importar sessão</SubmitButton></div>
+            {(cookieState.error || cookieState.message) && (
+              <p className={cn("text-sm", cookieState.error ? "text-red-700" : "text-emerald-700")}>{cookieState.error ?? cookieState.message}</p>
+            )}
+          </form>
         ) : (
-          <ol className="grid list-decimal gap-2 pl-5 text-sm">
-            <li>
-              {login.pwd ? (
-                <a href={vncLink(login.pwd)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold underline">
-                  Abrir o Chrome do coletor <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              ) : (
-                <button type="button" className="font-semibold underline" onClick={open}>Abrir o Chrome do coletor</button>
-              )}{" "}
-              (nova aba). Se a aba não abriu, clique no link.
-            </li>
-            <li>Entre na sua conta do Mercado Livre (senha, código etc.) até o Linkbuilder carregar logado.</li>
-            <li>
-              Volte aqui e clique em{" "}
-              <button type="button" className="btn-primary ml-1 py-1.5" disabled={pending}
-                onClick={() => start(async () => { const r = await mlLoginAction("parar"); setLogin({ ...r, open: false, session: r.session }); })}>
-                <CheckCircle2 className="h-4 w-4" /> {pending ? "Conferindo…" : "Concluir login"}
+          <>
+            <p className="hint">O Chrome do robô abre numa nova aba em {base || "…"} (precisa estar na mesma rede do servidor).</p>
+            {!login.open ? (
+              <button type="button" className="btn-ghost justify-self-start" disabled={pending} onClick={open}>
+                <LogIn className="h-4 w-4" /> {pending ? "Abrindo o Chrome…" : "Abrir o Chrome do robô"}
               </button>
-            </li>
-          </ol>
-        )}
-        {(login.error || login.message) && (
-          <p className={cn("text-sm", login.error ? "text-red-700" : "text-emerald-700")}>{login.error ?? login.message}</p>
+            ) : (
+              <ol className="grid list-decimal gap-2 pl-5 text-sm">
+                <li>
+                  {login.pwd ? (
+                    <a href={vncLink(login.pwd)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold underline">
+                      Abrir o Chrome do coletor <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  ) : (
+                    <button type="button" className="font-semibold underline" onClick={open}>Abrir o Chrome do coletor</button>
+                  )}{" "}
+                  (nova aba). Se a aba não abriu, clique no link.
+                </li>
+                <li>Entre na sua conta do Mercado Livre (senha, código etc.) até o Linkbuilder carregar logado.</li>
+                <li>
+                  Volte aqui e clique em{" "}
+                  <button type="button" className="btn-primary ml-1 py-1.5" disabled={pending}
+                    onClick={() => start(async () => { const r = await mlLoginAction("parar"); setLogin({ ...r, open: false, session: r.session }); })}>
+                    <CheckCircle2 className="h-4 w-4" /> {pending ? "Conferindo…" : "Concluir login"}
+                  </button>
+                </li>
+              </ol>
+            )}
+            {(login.error || login.message) && (
+              <p className={cn("text-sm", login.error ? "text-red-700" : "text-emerald-700")}>{login.error ?? login.message}</p>
+            )}
+          </>
         )}
       </div>
       <TestPanel src="mercadolivre" />

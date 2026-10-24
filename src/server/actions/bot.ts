@@ -189,3 +189,18 @@ export async function mlLoginAction(op: "iniciar" | "parar"): Promise<ActionStat
     return { error: (e as Error).message };
   }
 }
+
+/** Sessão do ML pelos cookies exportados do navegador da pessoa (alternativa ao noVNC) */
+export async function mlCookiesAction(_: ActionState, form: FormData): Promise<ActionState & { session?: boolean }> {
+  await requirePage("bot");
+  const cookies = String(form.get("cookies") ?? "").trim();
+  if (cookies.length < 20) return { error: "Cole aqui os cookies exportados do Mercado Livre" };
+  if (cookies.length > 400_000) return { error: "Texto grande demais: exporte só os cookies do mercadolivre.com.br" };
+  try {
+    const r = await callCollector<{ ok: boolean; sessao?: boolean; mensagem?: string }>("/ml-login/cookies", { cookies }, 120_000);
+    revalidatePath("/admin/robo");
+    return r.sessao ? { ok: true, message: r.mensagem, session: true } : { error: r.mensagem, session: false };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}

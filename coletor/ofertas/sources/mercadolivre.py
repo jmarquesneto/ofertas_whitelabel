@@ -96,6 +96,87 @@ def _preco_de(card, seletor_base: str) -> float | None:
     return parse_preco_br(texto)
 
 
+# ── Sessão por cookies (login feito no navegador da pessoa) ─────────
+
+_SAMESITE = {"no_restriction": "None", "none": "None", "lax": "Lax", "strict": "Strict"}
+
+
+def _cookies_de_texto(texto: str) -> list[dict]:
+    """Aceita o JSON exportado por extensões (Cookie-Editor, EditThisCookie, Get cookies.txt)
+    ou o cabeçalho "Cookie: a=b; c=d" copiado do DevTools. Retorna cookies no formato do Playwright."""
+    import json
+
+    texto = (texto or "").strip()
+    if not texto:
+        raise RuntimeError("Cole os cookies exportados do Mercado Livre")
+    cookies: list[dict] = []
+    if texto[:1] in "[{":
+        try:
+            dados = json.loads(texto)
+        except ValueError:
+            raise RuntimeError("O texto colado não é um JSON válido")
+        if isinstance(dados, dict):
+            dados = dados.get("cookies") or [dados]
+        for c in dados:
+            if not isinstance(c, dict) or not c.get("name"):
+                continue
+            dominio = str(c.get("domain") or ".mercadolivre.com.br")
+            if not any(d in dominio for d in ("mercadolivre", "mercadolibre", "meli")):
+                continue  # só cookies do Mercado Livre
+            novo = {
+                "name": str(c["name"]),
+                "value": str(c.get("value", "")),
+                "domain": dominio,
+                "path": str(c.get("path") or "/"),
+                "httpOnly": bool(c.get("httpOnly", False)),
+                "secure": bool(c.get("secure", True)),
+            }
+            exp = c.get("expirationDate", c.get("expires"))
+            # Cookie "de sessão" morre quando o Chrome fecha: damos 30 dias para ele sobreviver
+            novo["expires"] = float(exp) if exp and float(exp) > 0 else time.time() + 30 * 86400
+            ss = _SAMESITE.get(str(c.get("sameSite") or "").lower())
+            if ss:
+                novo["sameSite"] = ss
+                if ss == "None":
+                    novo["secure"] = True
+            cookies.append(novo)
+    else:
+        linha = texto.split(":", 1)[1] if texto.lower().startswith("cookie:") else texto
+        for parte in linha.split(";"):
+            if "=" in parte:
+                nome, valor = parte.strip().split("=", 1)
+                if nome:
+                    cookies.append({"name": nome, "value": valor, "domain": ".mercadolivre.com.br",
+                                    "path": "/", "secure": True, "expires": time.time() + 30 * 86400})
+    if not cookies:
+        raise RuntimeError("Não achei cookies do Mercado Livre no texto colado. "
+                           "Exporte estando na página do mercadolivre.com.br")
+    return cookies
+
+
+def importar_cookies(texto: str) -> int:
+    """Grava os cookies no perfil do Chrome do robô. Retorna quantos foram importados."""
+    from playwright.sync_api import sync_playwright
+
+    cookies = _cookies_de_texto(texto)
+    PERFIL_DIR.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as pw:
+        ctx = _abrir_contexto(pw, headless=True)
+        try:
+            ctx.clear_cookies()
+            ctx.add_cookies(cookies)
+            page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            try:
+                page.goto("https://www.mercadolivre.com.br/", wait_until="domcontentloaded", timeout=45_000)
+            except Exception as e:
+                log.warning("Não abri o ML depois de importar os cookies: %s", e)
+            page.wait_for_timeout(1500)  # deixa o Chrome gravar os cookies no perfil
+        finally:
+            ctx.close()
+    log.info("Mercado Livre: %d cookies importados", len(cookies))
+    return len(cookies)
+
+
 def _parse_card(card) -> Oferta | None:
     a = card.select_one("a.poly-component__title")
     if not (a and a.get("href")):

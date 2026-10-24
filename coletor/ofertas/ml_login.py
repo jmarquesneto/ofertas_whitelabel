@@ -83,8 +83,8 @@ def iniciar() -> dict:
             log_chrome = open(DATA_DIR / "chrome-login.log", "wb")
             chrome_proc = subprocess.Popen(
                 [chrome, f"--user-data-dir={mercadolivre.PERFIL_DIR}", "--no-first-run", "--no-default-browser-check",
-                 "--no-sandbox", "--password-store=basic", "--disable-dev-shm-usage", "--disable-gpu",
-                 "--use-gl=swiftshader", "--lang=pt-BR", "--window-position=0,0", "--window-size=1280,860",
+                 "--no-sandbox", *mercadolivre.CHROME_ARGS[1:], "--lang=pt-BR",
+                 "--window-position=0,0", "--window-size=1280,860",
                  mercadolivre.URL_LINKBUILDER],
                 stdout=log_chrome, stderr=subprocess.STDOUT, env=env)
             _procs.append(chrome_proc)

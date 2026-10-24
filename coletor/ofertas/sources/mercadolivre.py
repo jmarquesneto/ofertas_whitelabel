@@ -236,20 +236,30 @@ def _parse_pagina(html: str) -> list[Oferta]:
 
 # ── Link de afiliado via Linkbuilder (Playwright + sessão logada) ────
 
+CHROME_ARGS = [
+    "--disable-blink-features=AutomationControlled",
+    "--password-store=basic",       # mesmo jeito de guardar cookies que o Chrome do login (noVNC)
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-crash-reporter",     # crashpad derruba o Chrome em container sem pasta pessoal
+    "--disable-breakpad",
+    "--no-first-run",
+]
+
+
 def _abrir_contexto(pw, headless: bool):
     """Google Chrome instalado (build de produção) + perfil persistente do projeto.
 
     O ML recusa login no "Chrome for Testing" do Playwright, então usamos o
-    Chrome real via channel="chrome" e removemos as marcas de automação.
+    Chrome real (/opt/google/chrome) e removemos as marcas de automação.
     """
     kwargs = dict(
-        channel="chrome",
+        executable_path=_achar_chrome(),
         headless=headless,
         locale="pt-BR",
-        # password-store=basic: mesmo jeito de guardar cookies que o Chrome do login (noVNC)
-        args=["--disable-blink-features=AutomationControlled", "--password-store=basic",
-              "--disable-dev-shm-usage"],
+        args=CHROME_ARGS,
         ignore_default_args=["--enable-automation"],
+        chromium_sandbox=False,
     )
     if headless:
         kwargs["user_agent"] = USER_AGENT  # o headless real se anuncia como HeadlessChrome
@@ -258,12 +268,9 @@ def _abrir_contexto(pw, headless: bool):
     try:
         return pw.chromium.launch_persistent_context(str(PERFIL_DIR), **kwargs)
     except Exception as e:
-        if "chrome" not in str(e).lower():
-            raise
-        log.warning("Google Chrome não encontrado (%s); usando Chromium do projeto — "
-                    "o login no ML pode ser recusado", type(e).__name__)
-        kwargs.pop("channel")
-        return pw.chromium.launch_persistent_context(str(PERFIL_DIR), **kwargs)
+        # Mostra o motivo real (as primeiras linhas do erro do Chrome), sem a moldura do Playwright
+        linhas = [l.strip(" ║╔╗╚╝═") for l in str(e).splitlines() if l.strip(" ║╔╗╚╝═")]
+        raise RuntimeError("O Chrome não abriu: " + " | ".join(linhas[:6])[:500]) from None
 
 
 def _achar_chrome() -> str:
@@ -297,7 +304,8 @@ def _achar_chrome() -> str:
             "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
         ]
     else:  # Linux e afins
-        for nome in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+        candidatos.append("/opt/google/chrome/chrome")  # binário real do pacote google-chrome-stable
+        for nome in ("google-chrome-stable", "google-chrome", "chromium", "chromium-browser",
                      "brave-browser", "microsoft-edge"):
             achado = shutil.which(nome)
             if achado:

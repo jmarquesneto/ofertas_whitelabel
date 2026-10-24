@@ -2,6 +2,7 @@
 
     python -m ofertas            # roda o coletor (API interna + ciclos agendados)
     python -m ofertas testar ml  # testa uma loja sem entregar nada
+    python -m ofertas autoteste  # confere se o Chrome abre neste container
 """
 import logging
 import sys
@@ -63,5 +64,8 @@ def main() -> None:
         rodar()
     elif args[0] == "testar" and len(args) > 1:
         testar(args[1])
+    elif args[0] == "autoteste":
+        from .autoteste import main as autoteste
+        raise SystemExit(autoteste())
     else:
         raise SystemExit(__doc__)

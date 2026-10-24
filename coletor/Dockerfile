@@ -30,6 +30,11 @@ RUN pip install -r requirements.txt
 COPY ofertas ./ofertas
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
+# Autoteste: abre o Chrome como usuário comum, do mesmo jeito que o robô. Se falhar, o build falha.
+RUN mkdir -p /tmp/autoteste-home && chown 1000:100 /tmp/autoteste-home \
+ && gosu 1000:100 env HOME=/tmp/autoteste-home DATA_DIR=/tmp/autoteste-home/data python -m ofertas autoteste \
+ && rm -rf /tmp/autoteste-home
+
 # 8000 = API interna (só a vitrine usa) · 6080 = noVNC (login do ML)
 EXPOSE 8000 6080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \

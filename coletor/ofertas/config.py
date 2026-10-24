@@ -11,6 +11,14 @@ from pathlib import Path
 DATA_DIR = Path(os.getenv("DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+# O Chrome precisa de uma pasta pessoal com escrita; sem ela (HOME=/) ele fecha ao abrir
+if not os.access(os.environ.get("HOME", "/"), os.W_OK):
+    _home = DATA_DIR / "home"
+    _home.mkdir(parents=True, exist_ok=True)
+    os.environ["HOME"] = str(_home)
+    os.environ["XDG_CONFIG_HOME"] = str(_home / ".config")
+    os.environ["XDG_CACHE_HOME"] = str(_home / ".cache")
+
 VITRINE_URL = os.getenv("VITRINE_URL", "http://app:3000").rstrip("/")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 PORTA_API = int(os.getenv("COLETOR_PORT", "8000"))

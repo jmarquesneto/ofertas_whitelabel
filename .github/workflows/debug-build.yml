@@ -1,0 +1,13 @@
+name: debug build
+on: [workflow_dispatch]
+jobs:
+  alpine:
+    strategy: { fail-fast: false, matrix: { arch: [amd64, arm64] } }
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker run --rm -v "$PWD":/app -w /app -e NEXT_TELEMETRY_DISABLED=1 node:22-alpine sh -c "apk add --no-cache libc6-compat >/dev/null && npm ci --no-audit --no-fund >/dev/null 2>&1 && npm run build" > out.txt 2>&1; code=$?
+          msg=$(grep -vE '^\s*(├|└|│|┌)' out.txt | tail -40 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+          echo "::warning title=build-${{ matrix.arch }}-exit-$code::$msg"
+          exit $code

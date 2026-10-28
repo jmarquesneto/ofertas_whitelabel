@@ -11,6 +11,7 @@ export const PAGES = [
   { key: "analytics", label: "Analytics", href: "/admin" },
   { key: "offers", label: "Ofertas", href: "/admin/offers" },
   { key: "approval", label: "Aprovação", href: "/admin/aprovacao" },
+  { key: "coupons", label: "Cupons", href: "/admin/cupons" },
   { key: "banners", label: "Banners", href: "/admin/banners" },
   { key: "categories", label: "Categorias", href: "/admin/categories" },
   { key: "platforms", label: "Plataformas", href: "/admin/platforms" },

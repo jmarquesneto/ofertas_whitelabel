@@ -132,11 +132,50 @@ export const platforms = pgTable(
     name: varchar("name", { length: 80 }).notNull(),
     slug: varchar("slug", { length: 90 }).notNull(),
     logoPath: varchar("logo_path", { length: 255 }),
+    // Cupons: arte que vai na mensagem do WhatsApp e no topo da loja em /cupons
+    couponBannerPath: varchar("coupon_banner_path", { length: 500 }),
+    // Cupons: link de afiliado da loja ("Teste o cupom através deste link" → /c/<slug>)
+    couponUrl: text("coupon_url"),
     isActive: boolean("is_active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("platforms_slug_uq").on(t.slug)],
+);
+
+/* ------------------------------------------------------------------ */
+/* Cupons (por plataforma) — importados por CSV ou cadastrados à mão   */
+/* ------------------------------------------------------------------ */
+export const coupons = pgTable(
+  "coupons",
+  {
+    id: serial("id").primaryKey(),
+    platformId: integer("platform_id").notNull().references(() => platforms.id, { onDelete: "cascade" }),
+    code: varchar("code", { length: 60 }).notNull(), // sempre em maiúsculas
+    description: varchar("description", { length: 200 }),
+    minValue: numeric("min_value", { precision: 10, scale: 2 }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }), // null = sem validade
+    isActive: boolean("is_active").notNull().default(true),
+    createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("coupons_platform_code_uq").on(t.platformId, t.code),
+    index("coupons_live_idx").on(t.isActive, t.expiresAt),
+  ],
+);
+
+/* Cliques no link da loja dos cupons (/c/<slug>) */
+export const couponClicks = pgTable(
+  "coupon_clicks",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    platformId: integer("platform_id").notNull().references(() => platforms.id, { onDelete: "cascade" }),
+    ipHash: varchar("ip_hash", { length: 64 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("coupon_clicks_platform_time_idx").on(t.platformId, t.createdAt)],
 );
 
 /* ------------------------------------------------------------------ */
@@ -325,12 +364,31 @@ export const whatsappSettings = pgTable(
   (t) => [check("whatsapp_settings_singleton", sql`${t.id} = 1`)],
 );
 
-/* Fila e histórico de envios ao grupo */
+/* Grupos que recebem as mensagens: cada um marca se recebe Ofertas e/ou Cupons */
+export const whatsappGroups = pgTable(
+  "whatsapp_groups",
+  {
+    id: serial("id").primaryKey(),
+    jid: varchar("jid", { length: 80 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    sendOffers: boolean("send_offers").notNull().default(true),
+    sendCoupons: boolean("send_coupons").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("whatsapp_groups_jid_uq").on(t.jid)],
+);
+
+/* Fila e histórico de envios (uma linha por mensagem × grupo) */
 export const whatsappSends = pgTable(
   "whatsapp_sends",
   {
     id: serial("id").primaryKey(),
-    offerId: integer("offer_id").notNull().references(() => offers.id, { onDelete: "cascade" }),
+    // "offer" = uma oferta · "coupons" = cupons de uma loja numa mensagem só
+    kind: varchar("kind", { length: 10 }).notNull().default("offer"),
+    offerId: integer("offer_id").references(() => offers.id, { onDelete: "cascade" }),
+    platformId: integer("platform_id").references(() => platforms.id, { onDelete: "cascade" }),
+    couponIds: jsonb("coupon_ids").$type<number[]>(),
+    groupJid: varchar("group_jid", { length: 80 }),
     // queued → sending → sent | failed
     status: varchar("status", { length: 10 }).notNull().default("queued"),
     attempts: integer("attempts").notNull().default(0),
@@ -342,6 +400,7 @@ export const whatsappSends = pgTable(
     index("whatsapp_sends_status_idx").on(t.status, t.createdAt),
     index("whatsapp_sends_offer_idx").on(t.offerId),
     check("whatsapp_sends_status", sql`${t.status} in ('queued', 'sending', 'sent', 'failed')`),
+    check("whatsapp_sends_kind", sql`${t.kind} in ('offer', 'coupons')`),
   ],
 );
 
@@ -360,6 +419,10 @@ export const offersRelations = relations(offers, ({ one, many }) => ({
 }));
 export const whatsappSendsRelations = relations(whatsappSends, ({ one }) => ({
   offer: one(offers, { fields: [whatsappSends.offerId], references: [offers.id] }),
+  platform: one(platforms, { fields: [whatsappSends.platformId], references: [platforms.id] }),
+}));
+export const couponsRelations = relations(coupons, ({ one }) => ({
+  platform: one(platforms, { fields: [coupons.platformId], references: [platforms.id] }),
 }));
 export const clicksRelations = relations(clicks, ({ one }) => ({
   offer: one(offers, { fields: [clicks.offerId], references: [offers.id] }),

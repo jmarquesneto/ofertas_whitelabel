@@ -101,7 +101,7 @@ export async function intakeOffer(o: IntakeOffer, opts: { manual?: boolean; user
     })
     .returning({ id: offers.id });
 
-  let whatsapp = false;
+  let whatsapp = 0;
   if (direct) {
     whatsapp = await enqueueWhatsapp(row.id);
     revalidatePath("/");

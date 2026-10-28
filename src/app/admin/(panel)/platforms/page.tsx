@@ -14,13 +14,14 @@ export default async function PlatformsPage() {
     <>
       <PageHeader
         title="Plataformas"
-        subtitle="Lojas e programas de afiliados exibidos nos filtros da vitrine."
+        subtitle="Lojas e programas de afiliados. O ID é o que vai na coluna loja_id do CSV de cupons."
         action={<a href="/admin/platforms/new" className="btn-primary">Nova plataforma</a>}
       />
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[560px]">
           <thead>
             <tr>
+              <th className="table-head">ID</th>
               <th className="table-head">Plataforma</th>
               <th className="table-head">Ordem</th>
               <th className="table-head text-right">Ofertas</th>
@@ -31,12 +32,13 @@ export default async function PlatformsPage() {
           <tbody>
             {rows.map((p) => (
               <tr key={p.id}>
+                <td className="table-cell font-mono text-sm font-bold">{p.id}</td>
                 <td className="table-cell">
                   <span className="flex items-center gap-3">
                     <PlatformBadge name={p.name} logo={p.logoPath} />
                     <span>
                       <span className="block font-medium">{p.name}</span>
-                      <span className="text-xs text-ink-faint">/?p={p.slug}</span>
+                      <span className="text-xs text-ink-faint">/?p={p.slug}{p.couponBannerPath ? " · banner de cupons ✓" : ""}{p.couponUrl ? " · link da loja ✓" : ""}</span>
                     </span>
                   </span>
                 </td>

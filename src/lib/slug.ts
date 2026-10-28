@@ -5,7 +5,7 @@ import { categories, offers, platforms } from "@/db/schema";
 /** Rotas de primeiro nível que um slug de oferta jamais pode ocupar */
 export const RESERVED_SLUGS = new Set([
   "admin", "api", "uploads", "_next", "favicon.ico", "robots.txt", "sitemap.xml", "manifest.json", "health",
-  "oferta", "ofertas", "favoritos", "categoria", "categorias",
+  "oferta", "ofertas", "favoritos", "categoria", "categorias", "c", "cupom", "cupons",
 ]);
 
 export function slugify(input: string, max = 80): string {

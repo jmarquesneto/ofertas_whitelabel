@@ -4,7 +4,10 @@ import type { ActionState } from "@/lib/utils";
 import { FormMessage, SubmitButton } from "./ui";
 import { ImageInput } from "./ImageInput";
 
-type Initial = { name: string; logoPath: string | null; isActive: boolean; sortOrder: number };
+type Initial = {
+  name: string; logoPath: string | null; isActive: boolean; sortOrder: number;
+  couponBannerPath: string | null; couponUrl: string | null;
+};
 
 export function PlatformForm({
   action, initial,
@@ -26,6 +29,26 @@ export function PlatformForm({
         <ImageInput id="logo" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
         <span className="hint">Quadrado, fundo transparente ou branco. Exibido em 20–28px.</span>
       </div>
+      <fieldset className="grid gap-4 rounded-xl border border-dashed border-line p-4">
+        <legend className="px-1 text-sm font-bold">Cupons desta loja</legend>
+        <div className="field">
+          <label className="label" htmlFor="couponBanner">Banner de cupons</label>
+          {initial?.couponBannerPath && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={initial.couponBannerPath} alt="Banner atual" className="aspect-[16/9] w-full max-w-sm rounded-lg border border-line bg-white object-cover" />
+          )}
+          <ImageInput id="couponBanner" name="couponBanner" accept="image/png,image/jpeg,image/webp" />
+          <span className="hint">Vai como imagem na mensagem de cupons do WhatsApp e no topo da loja em /cupons. Ideal: 1200×675 (16:9). Sem banner, usa o logo.</span>
+          {initial?.couponBannerPath && (
+            <label className="flex items-center gap-2 text-sm text-ink-muted"><input type="checkbox" name="removeCouponBanner" /> Remover banner atual</label>
+          )}
+        </div>
+        <div className="field">
+          <label className="label" htmlFor="couponUrl">Link de afiliado da loja <span className="font-normal text-ink-faint">(opcional)</span></label>
+          <input className="input font-mono text-xs" id="couponUrl" name="couponUrl" type="url" defaultValue={initial?.couponUrl ?? ""} placeholder="https://s.shopee.com.br/…" />
+          <span className="hint">Para onde leva o “Teste o cupom através deste link” (página de cupons ou home da loja com o seu link de afiliado). Sem ele, o link vai para /cupons do site.</span>
+        </div>
+      </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="field">
           <label className="label" htmlFor="sortOrder">Ordem nos filtros</label>

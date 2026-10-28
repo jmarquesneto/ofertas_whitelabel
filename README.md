@@ -179,11 +179,17 @@ sequenceDiagram
 * **Importar por link**: cole o link de um produto e ele entra na aprovação com foto, preço e link de afiliado.
 * Login do Mercado Livre pelo próprio painel: o Chrome do robô abre no navegador (noVNC), com senha de uso único.
 
-### 7. 💬 WhatsApp (Evolution API)
+### 7. 🎟️ Cupons
+* Página pública **/cupons** com os cupons válidos de cada loja, botão **Copiar** e link da loja com clique contado (`/c/<loja>`).
+* **Importação por CSV** (`loja_id` e `codigo` obrigatórios; `descricao`, `validade`, `valor_minimo` opcionais), com modelo para baixar, **prévia** (novo, atualiza ou erro) antes de gravar e cadastro manual.
+* Cada plataforma tem **banner de cupons** e **link de afiliado da loja**.
+* Envio ao WhatsApp em **uma mensagem por loja** com todos os cupons, o banner e "Teste o cupom através deste link".
+
+### 8. 💬 WhatsApp (Evolution API)
 * Envio ao grupo com **foto, preço de/por, desconto, cupom e o link curto** (os cliques contam no Analytics).
 * **Fila com intervalo mínimo** entre mensagens para proteger o número; histórico com **reenviar**.
 * Checkbox "Enviar ao grupo" ao publicar, botão de envio na lista de ofertas e na aprovação.
-* Verificar conexão, escolher o grupo numa lista e mensagem de teste, tudo no painel.
+* **Vários grupos**, cada um marcado para receber **Ofertas** e/ou **Cupons**; verificar conexão, lista de grupos e mensagem de teste no painel.
 
 ---
 

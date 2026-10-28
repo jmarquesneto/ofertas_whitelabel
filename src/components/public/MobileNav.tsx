@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, House, LayoutGrid, Tag } from "lucide-react";
+import { Heart, House, LayoutGrid, Tag, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/lib/client/favorites";
 
 const items = [
   { href: "/", label: "Início", icon: House, match: (p: string) => p === "/" },
   { href: "/ofertas", label: "Ofertas", icon: Tag, match: (p: string) => p.startsWith("/ofertas") || p.startsWith("/oferta/") },
+  { href: "/cupons", label: "Cupons", icon: Ticket, match: (p: string) => p.startsWith("/cupons") },
   { href: "/categorias", label: "Categorias", icon: LayoutGrid, match: (p: string) => p.startsWith("/categorias") },
   { href: "/favoritos", label: "Favoritos", icon: Heart, match: (p: string) => p.startsWith("/favoritos") },
 ];
@@ -18,7 +19,7 @@ export function MobileNav() {
   const favs = useFavorites().length;
   return (
     <nav aria-label="Navegação" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {items.map(({ href, label, icon: I, match }) => {
           const on = match(path);
           return (

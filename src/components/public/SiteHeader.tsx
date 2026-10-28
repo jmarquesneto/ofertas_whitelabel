@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, Heart, LayoutGrid, Search } from "lucide-react";
+import { ChevronDown, Heart, LayoutGrid, Search, Ticket } from "lucide-react";
 import type { SiteSettings } from "@/db/schema";
 import type { CategoryNode } from "@/server/queries";
 import { Logo } from "./Logo";
@@ -29,7 +29,11 @@ export function SiteHeader({ settings, tree, q }: { settings: SiteSettings; tree
           </div>
         </form>
 
-        <Link href="/favoritos" className="relative order-2 ml-auto flex items-center gap-2 rounded-full px-2 py-2 text-sm font-semibold transition hover:bg-white/10 sm:order-3 sm:ml-0">
+        <Link href="/cupons" className="order-2 ml-auto flex items-center gap-2 rounded-full px-2 py-2 text-sm font-semibold transition hover:bg-white/10 sm:order-3 sm:ml-0">
+          <Ticket className="h-6 w-6" strokeWidth={2} />
+          <span className="hidden lg:inline">Cupons</span>
+        </Link>
+        <Link href="/favoritos" className="relative order-2 flex items-center gap-2 rounded-full px-2 py-2 text-sm font-semibold transition hover:bg-white/10 sm:order-3">
           <Heart className="h-6 w-6" strokeWidth={2} />
           <span className="hidden lg:inline">Favoritos</span>
           <FavCount />

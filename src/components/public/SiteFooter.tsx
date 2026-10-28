@@ -16,6 +16,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
         </div>
         <nav className="flex gap-6 text-sm font-semibold md:flex-col md:gap-2">
           <Link href="/ofertas" className="text-white/80 hover:text-white">Ofertas</Link>
+          <Link href="/cupons" className="text-white/80 hover:text-white">Cupons</Link>
           <Link href="/categorias" className="text-white/80 hover:text-white">Categorias</Link>
           <Link href="/favoritos" className="text-white/80 hover:text-white">Favoritos</Link>
         </nav>

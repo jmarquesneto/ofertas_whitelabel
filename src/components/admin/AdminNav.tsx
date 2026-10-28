@@ -1,6 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bot, GalleryHorizontal, Inbox, Layers, MessageCircle, Palette, Store, Tag, Users } from "lucide-react";
+import { BarChart3, Bot, GalleryHorizontal, Inbox, Layers, MessageCircle, Palette, Store, Tag, Ticket, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PageKey } from "@/lib/permissions";
 
@@ -8,6 +8,7 @@ const items: { key: PageKey; href: string; label: string; icon: typeof Tag; exac
   { key: "analytics", href: "/admin", label: "Analytics", icon: BarChart3, exact: true },
   { key: "offers", href: "/admin/offers", label: "Ofertas", icon: Tag },
   { key: "approval", href: "/admin/aprovacao", label: "Aprovação", icon: Inbox },
+  { key: "coupons", href: "/admin/cupons", label: "Cupons", icon: Ticket },
   { key: "banners", href: "/admin/banners", label: "Banners", icon: GalleryHorizontal },
   { key: "categories", href: "/admin/categories", label: "Categorias", icon: Layers },
   { key: "platforms", href: "/admin/platforms", label: "Plataformas", icon: Store },

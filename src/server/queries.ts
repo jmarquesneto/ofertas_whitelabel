@@ -217,6 +217,7 @@ export async function listAllPlatforms() {
     .select({
       id: platforms.id, name: platforms.name, slug: platforms.slug, logoPath: platforms.logoPath,
       isActive: platforms.isActive, sortOrder: platforms.sortOrder,
+      couponBannerPath: platforms.couponBannerPath, couponUrl: platforms.couponUrl,
       offers: sql<number>`(select count(*) from ${offers} o where o.platform_id = ${platforms.id})`.mapWith(Number),
     })
     .from(platforms)

@@ -25,7 +25,8 @@ const refresh = () => {
 
 /* ----------------------------- normalização ----------------------------- */
 
-const HEADERS: Record<string, "loja" | "codigo" | "descricao" | "validade" | "minimo"> = {
+const HEADERS: Record<string, "loja" | "codigo" | "descricao" | "validade" | "minimo" | "desconto"> = {
+  desconto: "desconto", destaque: "desconto", discount: "desconto", off: "desconto",
   lojaid: "loja", idloja: "loja", loja: "loja", plataforma: "loja", plataformaid: "loja", idplataforma: "loja", storeid: "loja",
   codigo: "codigo", cupom: "codigo", code: "codigo", codigocupom: "codigo", coupon: "codigo",
   descricao: "descricao", description: "descricao", desc: "descricao", beneficio: "descricao",
@@ -38,6 +39,7 @@ export type CouponRow = {
   platformId: number | null;
   platformName?: string;
   code: string;
+  discount: string | null;
   description: string | null;
   expiresAt: string | null; // ISO
   minValue: string | null;
@@ -76,7 +78,7 @@ const CODE_RE = /^[A-Z0-9][A-Z0-9_.\-]{1,59}$/;
 
 /** Valida linhas já mapeadas e marca novo/atualiza/erro (consulta o banco uma vez) */
 async function classify(
-  input: { line: number; loja: string; codigo: string; descricao: string; validade: string; minimo: string }[],
+  input: { line: number; loja: string; codigo: string; descricao: string; validade: string; minimo: string; desconto?: string }[],
 ): Promise<CouponRow[]> {
   const plats = await db.select({ id: platforms.id, name: platforms.name }).from(platforms);
   const platById = new Map(plats.map((p) => [p.id, p.name]));
@@ -86,7 +88,7 @@ async function classify(
   for (const r of input) {
     const code = r.codigo.trim().toUpperCase().replace(/\s+/g, "");
     const pid = Number(r.loja.trim());
-    const row: CouponRow = { line: r.line, platformId: Number.isInteger(pid) ? pid : null, code, description: null, expiresAt: null, minValue: null, status: "novo" };
+    const row: CouponRow = { line: r.line, platformId: Number.isInteger(pid) ? pid : null, code, discount: null, description: null, expiresAt: null, minValue: null, status: "novo" };
     const errs: string[] = [];
     if (!r.loja.trim()) errs.push("loja_id vazio");
     else if (!Number.isInteger(pid) || !platById.has(pid)) errs.push(`loja_id ${r.loja.trim()} não existe em Plataformas`);
@@ -96,6 +98,9 @@ async function classify(
     const desc = r.descricao.trim();
     if (desc.length > 200) errs.push("descrição passa de 200 caracteres");
     row.description = desc ? desc.slice(0, 200) : null;
+    const disc = (r.desconto ?? "").trim();
+    if (disc.length > 30) errs.push("desconto passa de 30 caracteres (ex.: 15% OFF)");
+    row.discount = disc ? disc.slice(0, 30).toUpperCase() : null;
     const dt = parseDate(r.validade);
     if (dt.error) errs.push(dt.error);
     row.expiresAt = dt.iso;
@@ -152,7 +157,7 @@ export async function previewCouponsAction(_: unknown, form: FormData): Promise<
 
   const input = table.slice(1).map((cells, i) => {
     const get = (k: string) => { const idx = cols.indexOf(k as never); return idx >= 0 ? (cells[idx] ?? "") : ""; };
-    return { line: i + 2, loja: get("loja"), codigo: get("codigo"), descricao: get("descricao"), validade: get("validade"), minimo: get("minimo") };
+    return { line: i + 2, loja: get("loja"), codigo: get("codigo"), descricao: get("descricao"), validade: get("validade"), minimo: get("minimo"), desconto: get("desconto") };
   });
   return { rows: await classify(input) };
 }
@@ -162,7 +167,7 @@ export async function previewCouponsAction(_: unknown, form: FormData): Promise<
 const confirmSchema = z.array(
   z.object({
     line: z.number(), platformId: z.number().int(), code: z.string(),
-    description: z.string().nullable(), expiresAt: z.string().nullable(), minValue: z.string().nullable(),
+    discount: z.string().nullable().optional(), description: z.string().nullable(), expiresAt: z.string().nullable(), minValue: z.string().nullable(),
   }),
 ).max(MAX_ROWS);
 
@@ -175,7 +180,7 @@ export async function importCouponsAction(_: ActionState, form: FormData): Promi
 
   // Revalida no servidor (a prévia veio do navegador)
   const rows = (await classify(p.data.map((r) => ({
-    line: r.line, loja: String(r.platformId), codigo: r.code, descricao: r.description ?? "",
+    line: r.line, loja: String(r.platformId), codigo: r.code, descricao: r.description ?? "", desconto: r.discount ?? "",
     validade: r.expiresAt ? isoToLocalDate(r.expiresAt) : "", minimo: r.minValue ?? "",
   })))).filter((r) => r.status !== "erro");
   if (!rows.length) return { error: "Nenhuma linha válida para importar" };
@@ -187,13 +192,13 @@ export async function importCouponsAction(_: ActionState, form: FormData): Promi
       const [res] = await tx
         .insert(coupons)
         .values({
-          platformId: r.platformId!, code: r.code, description: r.description, minValue: r.minValue,
+          platformId: r.platformId!, code: r.code, discount: r.discount, description: r.description, minValue: r.minValue,
           expiresAt: r.expiresAt ? new Date(r.expiresAt) : null, isActive: true, createdBy: user.id,
         })
         .onConflictDoUpdate({
           target: [coupons.platformId, coupons.code],
           set: {
-            description: r.description, minValue: r.minValue, isActive: true, updatedAt: sql`now()`,
+            discount: r.discount, description: r.description, minValue: r.minValue, isActive: true, updatedAt: sql`now()`,
             expiresAt: r.expiresAt ? new Date(r.expiresAt) : null,
           },
         })
@@ -226,17 +231,18 @@ export async function createCouponAction(_: ActionState, form: FormData): Promis
     descricao: String(form.get("description") ?? ""),
     validade: String(form.get("expiresAt") ?? ""), // input date: 2026-12-31
     minimo: String(form.get("minValue") ?? ""),
+    desconto: String(form.get("discount") ?? ""),
   }]);
   if (r.status === "erro") return { error: r.error };
   const [row] = await db
     .insert(coupons)
     .values({
-      platformId: r.platformId!, code: r.code, description: r.description, minValue: r.minValue,
+      platformId: r.platformId!, code: r.code, discount: r.discount, description: r.description, minValue: r.minValue,
       expiresAt: r.expiresAt ? new Date(r.expiresAt) : null, createdBy: user.id,
     })
     .onConflictDoUpdate({
       target: [coupons.platformId, coupons.code],
-      set: { description: r.description, minValue: r.minValue, expiresAt: r.expiresAt ? new Date(r.expiresAt) : null, isActive: true, updatedAt: sql`now()` },
+      set: { discount: r.discount, description: r.description, minValue: r.minValue, expiresAt: r.expiresAt ? new Date(r.expiresAt) : null, isActive: true, updatedAt: sql`now()` },
     })
     .returning({ id: coupons.id });
   let wa = "";

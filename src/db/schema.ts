@@ -152,6 +152,8 @@ export const coupons = pgTable(
     id: serial("id").primaryKey(),
     platformId: integer("platform_id").notNull().references(() => platforms.id, { onDelete: "cascade" }),
     code: varchar("code", { length: 60 }).notNull(), // sempre em maiúsculas
+    // Destaque opcional ("15% OFF"); vazio = tirado do começo da descrição
+    discount: varchar("discount", { length: 30 }),
     description: varchar("description", { length: 200 }),
     minValue: numeric("min_value", { precision: 10, scale: 2 }),
     expiresAt: timestamp("expires_at", { withTimezone: true }), // null = sem validade

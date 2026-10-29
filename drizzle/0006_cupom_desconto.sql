@@ -1,0 +1,1 @@
+ALTER TABLE "coupons" ADD COLUMN "discount" varchar(30);

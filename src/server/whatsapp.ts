@@ -60,7 +60,8 @@ export function buildCouponMessage(
   return [
     `🎟️ *Cupons ${platform.name}*`,
     "",
-    ...list.map(couponLine),
+    // linha em branco entre um cupom e outro: fica legível no celular
+    list.map(couponLine).join("\n\n"),
     "",
     "👉 Teste o cupom através deste link:",
     link,

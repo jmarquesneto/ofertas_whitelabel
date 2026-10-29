@@ -43,6 +43,13 @@
       "when": 1793210250245,
       "tag": "0005_cupons",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793234776025,
+      "tag": "0006_cupom_desconto",
+      "breakpoints": true
     }
   ]
 }

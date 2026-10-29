@@ -37,7 +37,7 @@ export function CouponImport({ waReady, couponGroups }: { waReady: boolean; coup
         <div>
           <h2 className="font-bold">Importar por CSV</h2>
           <p className="hint mt-0.5">
-            Colunas: <code>loja_id</code> e <code>codigo</code> (obrigatórias) · <code>descricao</code>, <code>validade</code>, <code>valor_minimo</code> (opcionais).
+            Colunas: <code>loja_id</code> e <code>codigo</code> (obrigatórias) · <code>descricao</code>, <code>validade</code>, <code>valor_minimo</code>, <code>desconto</code> (opcionais).
             Aceita vírgula ou ponto e vírgula. Cupom que já existe na loja é atualizado.
           </p>
         </div>
@@ -92,8 +92,8 @@ export function CouponImport({ waReady, couponGroups }: { waReady: boolean; coup
 
           {valid.length > 0 && !imported && (
             <form action={importAction} className="flex flex-wrap items-center gap-4 rounded-xl bg-surface-sunken p-4">
-              <input type="hidden" name="rows" value={JSON.stringify(valid.map(({ line, platformId, code, description, expiresAt, minValue }) =>
-                ({ line, platformId, code, description, expiresAt, minValue })))} />
+              <input type="hidden" name="rows" value={JSON.stringify(valid.map(({ line, platformId, code, discount, description, expiresAt, minValue }) =>
+                ({ line, platformId, code, discount, description, expiresAt, minValue })))} />
               {waReady && couponGroups > 0 ? (
                 <label className="flex items-center gap-2 text-sm font-semibold">
                   <input type="checkbox" name="sendWhatsapp" defaultChecked className="h-4 w-4 accent-[rgb(var(--c-secondary))]" />
@@ -141,7 +141,8 @@ export function CouponCreateForm({ platforms, waReady, couponGroups }: {
         </div>
         <div className="field sm:col-span-2">
           <label className="label" htmlFor="c-desc">Descrição <span className="font-normal text-ink-faint">(opcional)</span></label>
-          <input className="input" id="c-desc" name="description" maxLength={200} placeholder="R$ 20 off acima de R$ 150" />
+          <input className="input" id="c-desc" name="description" maxLength={200} placeholder="15% OFF | Limite de R$ 30" />
+          <span className="hint">Começando com “15% OFF” ou “R$ 20 OFF”, isso vira o destaque do cupom no site.</span>
         </div>
         <div className="field">
           <label className="label" htmlFor="c-exp">Validade <span className="font-normal text-ink-faint">(opcional)</span></label>

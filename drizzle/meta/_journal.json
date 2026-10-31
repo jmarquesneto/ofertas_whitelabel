@@ -50,6 +50,13 @@
       "when": 1793234776025,
       "tag": "0006_cupom_desconto",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793423757368,
+      "tag": "0007_extensao",
+      "breakpoints": true
     }
   ]
 }

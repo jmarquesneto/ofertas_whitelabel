@@ -185,7 +185,14 @@ sequenceDiagram
 * Cada plataforma tem **banner de cupons** e **link de afiliado da loja**.
 * Envio ao WhatsApp em **uma mensagem por loja** com todos os cupons, o banner e "Teste o cupom através deste link".
 
-### 8. 💬 WhatsApp (Evolution API)
+### 8. 🧩 Extensão do Chrome
+* Com um produto aberto no **Mercado Livre, Amazon ou Shopee**, um clique no ícone abre o formulário já preenchido (título, foto, preço de/por, cupom).
+* Gera o **seu link de afiliado**: Linkbuilder do ML com a sessão do próprio navegador, tag da Amazon, Open API da Shopee (ou cole o link).
+* **Publicar agora** (com envio ao WhatsApp) ou **mandar para Aprovação**; avisa se o produto já foi publicado nos últimos 7 dias.
+* Login com **e-mail, senha e 2FA**; a extensão guarda só uma chave daquele navegador, listada em **Meu perfil** com botão de desconectar.
+* Baixe em **Meu perfil → Extensão do Chrome** (o .zip já vem com o endereço do seu site) e carregue em `chrome://extensions` → *Carregar sem compactação*.
+
+### 9. 💬 WhatsApp (Evolution API)
 * Envio ao grupo com **foto, preço de/por, desconto, cupom e o link curto** (os cliques contam no Analytics).
 * **Fila com intervalo mínimo** entre mensagens para proteger o número; histórico com **reenviar**.
 * Checkbox "Enviar ao grupo" ao publicar, botão de envio na lista de ofertas e na aprovação.

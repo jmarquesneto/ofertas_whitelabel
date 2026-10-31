@@ -6,7 +6,7 @@ import { and, eq, ne, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { apiTokens, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { PRE_COOKIE, PRE_TTL_S, SESSION_COOKIE, SESSION_TTL_S, cookieOpts, signToken } from "@/lib/session";
@@ -102,4 +102,12 @@ export async function reconfigure2faAction(_: ActionState, form: FormData): Prom
   jar.delete(SESSION_COOKIE);
   jar.set(PRE_COOKIE, await signToken({ sub: String(me.id), stage: "setup" }, PRE_TTL_S), cookieOpts(PRE_TTL_S));
   redirect("/admin/2fa");
+}
+
+/** Desconecta uma extensão do Chrome (apaga a chave daquele navegador) */
+export async function revokeExtensionAction(id: number): Promise<ActionState> {
+  const me = await requireUser();
+  await db.delete(apiTokens).where(and(eq(apiTokens.id, id), eq(apiTokens.userId, me.id)));
+  revalidatePath("/admin/perfil");
+  return { ok: true };
 }

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Publicador de Ofertas",
+  "short_name": "Ofertas",
+  "version": "1.0.0",
+  "description": "Publica no seu site de ofertas o produto aberto no Mercado Livre, Amazon ou Shopee, já com o seu link de afiliado.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Publicar esta oferta",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://*.mercadolivre.com.br/*"]
+}

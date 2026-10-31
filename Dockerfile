@@ -33,6 +33,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Migrações SQL aplicadas automaticamente no boot (src/instrumentation.ts)
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+# Extensão do Chrome (baixada em Meu perfil já com o endereço do site)
+COPY --from=builder --chown=nextjs:nodejs /app/extensao ./extensao
 
 # O app roda com qualquer PUID/PGID (padrão do OMV): o entrypoint ajusta a
 # pasta de uploads como root e depois troca para esse usuário via su-exec.

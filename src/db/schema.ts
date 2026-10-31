@@ -60,6 +60,23 @@ export const backupCodes = pgTable(
 );
 
 /* Páginas que cada grupo pode ver (linha existe = permitido). Admin vê tudo. */
+/* Chaves da extensão do Chrome: uma por navegador conectado (só o hash fica no banco).
+ * Valem enquanto users.session_version não mudar: bloqueio, reset de senha e
+ * "Sair dos outros dispositivos" desconectam as extensões também. */
+export const apiTokens = pgTable(
+  "api_tokens",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    sessionVersion: integer("session_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("api_tokens_hash_uq").on(t.tokenHash), index("api_tokens_user_idx").on(t.userId)],
+);
+
 export const rolePermissions = pgTable(
   "role_permissions",
   {

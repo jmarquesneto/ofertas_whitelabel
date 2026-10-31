@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Publicador de Ofertas</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="top">
+    <img src="icons/32.png" alt="" width="24" height="24" />
+    <strong id="brand">Publicador de Ofertas</strong>
+    <span id="who" class="who"></span>
+    <button id="logout" class="link hidden" type="button">Sair</button>
+  </header>
+
+  <main id="app">
+    <p class="muted center">Carregando…</p>
+  </main>
+
+  <template id="tpl-login">
+    <form class="stack" id="f-login">
+      <h1>Entrar</h1>
+      <p class="muted">Use o mesmo e-mail e senha do painel.</p>
+      <label class="field" id="site-field">Endereço do site
+        <input name="site" type="url" placeholder="https://ofertas.seudominio.com.br" required />
+      </label>
+      <label class="field">E-mail
+        <input name="email" type="email" autocomplete="username" required />
+      </label>
+      <label class="field">Senha
+        <input name="password" type="password" autocomplete="current-password" required />
+      </label>
+      <p class="error" hidden></p>
+      <button class="btn primary" type="submit">Continuar</button>
+    </form>
+  </template>
+
+  <template id="tpl-totp">
+    <form class="stack" id="f-totp">
+      <h1>Verificação em duas etapas</h1>
+      <p class="muted">Digite o código de 6 dígitos do Google Authenticator. Perdeu o celular? Use um código de recuperação.</p>
+      <label class="field">Código
+        <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="9" required autofocus class="code" />
+      </label>
+      <p class="error" hidden></p>
+      <button class="btn primary" type="submit">Entrar</button>
+      <button class="link" type="button" id="back">Voltar</button>
+    </form>
+  </template>
+
+  <template id="tpl-form">
+    <form class="stack" id="f-offer">
+      <div class="product">
+        <img id="img" alt="" />
+        <div class="grow">
+          <span id="store-badge" class="badge"></span>
+          <textarea name="title" rows="3" maxlength="200" required></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <label class="field">Loja
+          <select name="platformId" required></select>
+        </label>
+        <label class="field">Categoria
+          <select name="categoryId"><option value="">Sem categoria</option></select>
+        </label>
+      </div>
+
+      <div class="row three">
+        <label class="field">De (R$)
+          <input name="originalPrice" inputmode="decimal" placeholder="opcional" />
+        </label>
+        <label class="field">Por (R$)
+          <input name="price" inputmode="decimal" />
+        </label>
+        <label class="field">Cupom
+          <input name="coupon" maxlength="60" class="upper" placeholder="opcional" />
+        </label>
+      </div>
+
+      <label class="field">Link de afiliado <span id="aff-status" class="status"></span>
+        <input name="affiliateUrl" type="url" required placeholder="https://…" />
+      </label>
+
+      <label class="field">Descrição <span class="muted">(opcional)</span>
+        <input name="description" maxlength="300" placeholder="Frete grátis, 12x sem juros…" />
+      </label>
+
+      <div class="row">
+        <label class="field">Validade (horas)
+          <input name="hours" type="number" min="1" max="720" />
+        </label>
+        <label class="check"><input type="checkbox" name="isFeatured" /> Destaque na home</label>
+      </div>
+
+      <fieldset class="modes">
+        <label class="mode"><input type="radio" name="mode" value="publish" checked /> <span><b>Publicar agora</b><small>Vai direto para o site</small></span></label>
+        <label class="mode"><input type="radio" name="mode" value="review" /> <span><b>Aprovação</b><small>Revisar no painel antes</small></span></label>
+      </fieldset>
+      <label class="check" id="wa-line"><input type="checkbox" name="sendWhatsapp" checked /> Enviar ao grupo do WhatsApp</label>
+
+      <p class="error" hidden></p>
+      <button class="btn primary big" type="submit">Publicar oferta</button>
+    </form>
+  </template>
+
+  <template id="tpl-done">
+    <div class="stack center done">
+      <div class="ok">✓</div>
+      <h1 id="done-title">Publicada!</h1>
+      <p class="muted" id="done-sub"></p>
+      <div class="copy-line">
+        <input id="short" readonly />
+        <button class="btn" type="button" id="copy">Copiar</button>
+      </div>
+      <a class="btn" id="open-panel" target="_blank" rel="noopener">Abrir no painel</a>
+      <button class="link" type="button" id="again">Publicar outro</button>
+    </div>
+  </template>
+
+  <template id="tpl-unsupported">
+    <div class="stack center">
+      <div class="big-emoji">🛍️</div>
+      <h1>Abra um produto</h1>
+      <p class="muted">Abra a página de um produto no <b>Mercado Livre</b>, <b>Amazon</b> ou <b>Shopee</b> e clique de novo no ícone.</p>
+    </div>
+  </template>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
